@@ -100,3 +100,14 @@ cargo test --offline --lib
 ```
 
 改词库用 `/nebula reload <插件>`（或 `/nebula debug` 自动重编译），改 mod / 桥接需重启；线上服未开 RCON，停服要用 `stop`。
+
+## 7. 独立仓库的构建前置
+
+本仓库只含 `javamc/`，是从原来的 `mc-nebula/`（同层另有 `bedrock/`）单独拆出来发布的，因此保留了两处旧布局的痕迹：
+
+- **引擎 crate 是仓库外依赖**：`bridge/Cargo.toml` 写的是 `nebula = { path = "../../../rust-nebula/crates/nebula", features = ["jit"] }`，指向外部的 `rust-nebula` 引擎仓库（目前为私有，且 `jit` 特性需要 rustc 1.96+）。clone 本仓库后，需把引擎放到相对路径 `../../../rust-nebula/`，或把 `path` 改成本地实际位置，否则 `cargo build` 会直接失败。
+- **少数相对链接指向上层目录**：如开头与表格中的 `../bedrock/bridge/README.md`，原意是同级的基岩版实现，单独 clone 后该路径不存在，按名称到对应仓库查阅即可。
+
+**运行期数据不入库**（规则见 `.gitignore`）：`server/libraries/`、`.jdk/`、`world/`、`config/`、`mods/`、`logs/`、`crash-reports/` 都由安装器或开服生成；`server/nebula/_docs/` 是开服时从 `mod/docs/` 铺出的文档副本；`server/nebula/*/data/` 含登录插件的账号哈希、盐与会话，属于运行期数据。要在新机器复现专用服，需自行运行 NeoForge 21.1.265 安装器，再参考 `server/server.properties`、`run.bat`、`run.sh` 启动。
+
+**可直接使用的产物**：GitHub Release `v0.1.0` 附带 `nebula-neoforge-bridge-0.1.0.jar`（内含 Windows x86_64 的 JNI 库与离线文档站）。它只针对 **Minecraft 1.21.1 / NeoForge 21.1.265 / Java 21 专用服务端**编译；MC 1.21.11 等版本有破坏性 API 变更（命令权限系统改为对象化、`ResourceLocation` 更名 `Identifier` 等），不要直接混用。

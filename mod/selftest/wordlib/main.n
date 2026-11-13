@@ -34,6 +34,10 @@ $世界.实体治疗 TestCow 4$
 [事件]实体治疗
 $世界.执行命令 say REGRESS-HEAL|数值=%数值%|原因=%原因%|满血=%满血%|身高=%身高%$
 
+// 通用事件桥：按 Java 类名订阅，验证 EventBridge 真的动态注册并分发了 payload。
+[事件]EntityJoinLevelEvent
+$世界.执行命令 say REGRESS-EVENTBRIDGE|类=%eventClass%|名=%entity.name%$
+
 [f]重载
 // 给上一轮 summon 出来的 text_display 补 nebula_fx 标记（动作在 [指令] 结束时才落地，
 // 所以查询只能放到重载里做）。打完标记，兜底扫描就该在 1 秒内把它清掉。

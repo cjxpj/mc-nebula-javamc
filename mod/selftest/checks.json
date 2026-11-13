@@ -89,5 +89,10 @@
     "name": "通用事件桥清单",
     "log": "通用事件桥清单",
     "contains": "262 个事件类"
+  },
+  {
+    "name": "通用事件桥动态注册",
+    "log": "REGRESS-EVENTBRIDGE",
+    "contains": "EntityJoinLevelEvent"
   }
 ]
