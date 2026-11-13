@@ -1,0 +1,10 @@
+# 统一 LF：词库 .n / .ps1 / .sh / .py 都按行解析，避免 Windows checkout 转 CRLF 后
+# 残留回车符，或 Linux 启动脚本无法执行。
+* text=auto eol=lf
+
+# 明确按二进制处理的类型（若将来放开 *.jar / *.dll 的忽略规则）
+*.jar binary
+*.dll binary
+*.zip binary
+*.png binary
+*.jpg binary

@@ -1,0 +1,1579 @@
+{
+  "neoforge": "21.1.265",
+  "generatedFrom": "neoforge-21.1.265-universal.jar",
+  "count": 262,
+  "events": [
+    {
+      "name": "AddPackFindersEvent",
+      "class": "net.neoforged.neoforge.event.AddPackFindersEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "AddReloadListenerEvent",
+      "class": "net.neoforged.neoforge.event.AddReloadListenerEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "AddReloadListenerEvent.WrappedStateAwareListener",
+      "class": "net.neoforged.neoforge.event.AddReloadListenerEvent$WrappedStateAwareListener",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "AdvancementEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AdvancementEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AdvancementEvent.AdvancementEarnEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AdvancementEvent$AdvancementEarnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AdvancementEvent.AdvancementProgressEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AdvancementEvent$AdvancementProgressEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AdvancementEvent.AdvancementProgressEvent.ProgressType",
+      "class": "net.neoforged.neoforge.event.entity.player.AdvancementEvent$AdvancementProgressEvent$ProgressType",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AlterGroundEvent",
+      "class": "net.neoforged.neoforge.event.level.AlterGroundEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AlterGroundEvent.StateProvider",
+      "class": "net.neoforged.neoforge.event.level.AlterGroundEvent$StateProvider",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnimalTameEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.AnimalTameEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnvilRepairEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AnvilRepairEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnvilUpdateEvent",
+      "class": "net.neoforged.neoforge.event.AnvilUpdateEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ArmorHurtEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.ArmorHurtEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ArmorHurtEvent.ArmorEntry",
+      "class": "net.neoforged.neoforge.event.entity.living.ArmorHurtEvent$ArmorEntry",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ArrowLooseEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ArrowLooseEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ArrowNockEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ArrowNockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AttackEntityEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AttackEntityEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BabyEntitySpawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockDropsEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockDropsEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEntityTypeAddBlocksEvent",
+      "class": "net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "BlockEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.BlockToolModificationEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$BlockToolModificationEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.BreakEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$BreakEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.EntityMultiPlaceEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$EntityMultiPlaceEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.EntityPlaceEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$EntityPlaceEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.FarmlandTrampleEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$FarmlandTrampleEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.FluidPlaceBlockEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$FluidPlaceBlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.NeighborNotifyEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$NeighborNotifyEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockEvent.PortalSpawnEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockEvent$PortalSpawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BlockGrowFeatureEvent",
+      "class": "net.neoforged.neoforge.event.level.BlockGrowFeatureEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BonemealEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.BonemealEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "BuildCreativeModeTabContentsEvent",
+      "class": "net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "CanContinueSleepingEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.CanContinueSleepingEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CanPlayerSleepEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkDataEvent",
+      "class": "net.neoforged.neoforge.event.level.ChunkDataEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkDataEvent.Load",
+      "class": "net.neoforged.neoforge.event.level.ChunkDataEvent$Load",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkDataEvent.Save",
+      "class": "net.neoforged.neoforge.event.level.ChunkDataEvent$Save",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkEvent",
+      "class": "net.neoforged.neoforge.event.level.ChunkEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkEvent.Load",
+      "class": "net.neoforged.neoforge.event.level.ChunkEvent$Load",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkEvent.Unload",
+      "class": "net.neoforged.neoforge.event.level.ChunkEvent$Unload",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkTicketLevelUpdatedEvent",
+      "class": "net.neoforged.neoforge.event.level.ChunkTicketLevelUpdatedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkWatchEvent",
+      "class": "net.neoforged.neoforge.event.level.ChunkWatchEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkWatchEvent.Sent",
+      "class": "net.neoforged.neoforge.event.level.ChunkWatchEvent$Sent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkWatchEvent.UnWatch",
+      "class": "net.neoforged.neoforge.event.level.ChunkWatchEvent$UnWatch",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ChunkWatchEvent.Watch",
+      "class": "net.neoforged.neoforge.event.level.ChunkWatchEvent$Watch",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ClientInformationUpdatedEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ClientInformationUpdatedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CommandEvent",
+      "class": "net.neoforged.neoforge.event.CommandEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CreateFluidSourceEvent",
+      "class": "net.neoforged.neoforge.event.level.block.CreateFluidSourceEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CriticalHitEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.CriticalHitEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CropGrowEvent",
+      "class": "net.neoforged.neoforge.event.level.block.CropGrowEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CropGrowEvent.Post",
+      "class": "net.neoforged.neoforge.event.level.block.CropGrowEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CropGrowEvent.Pre",
+      "class": "net.neoforged.neoforge.event.level.block.CropGrowEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "CropGrowEvent.Pre.Result",
+      "class": "net.neoforged.neoforge.event.level.block.CropGrowEvent$Pre$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "DifficultyChangeEvent",
+      "class": "net.neoforged.neoforge.event.DifficultyChangeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EffectParticleModificationEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.EffectParticleModificationEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EnchantedBlockLootEvent",
+      "class": "net.neoforged.neoforge.event.enchanting.EnchantedBlockLootEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EnchantedEntityLootEvent",
+      "class": "net.neoforged.neoforge.event.enchanting.EnchantedEntityLootEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EnchantmentLevelSetEvent",
+      "class": "net.neoforged.neoforge.event.enchanting.EnchantmentLevelSetEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EnderManAngerEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.EnderManAngerEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityAttributeCreationEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "EntityAttributeModificationEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "EntityEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityEvent.EnteringSection",
+      "class": "net.neoforged.neoforge.event.entity.EntityEvent$EnteringSection",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityEvent.EntityConstructing",
+      "class": "net.neoforged.neoforge.event.entity.EntityEvent$EntityConstructing",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityEvent.Size",
+      "class": "net.neoforged.neoforge.event.entity.EntityEvent$Size",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityInvulnerabilityCheckEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityInvulnerabilityCheckEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityJoinLevelEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityJoinLevelEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityLeaveLevelEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityMobGriefingEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityMobGriefingEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityMountEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityMountEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityStruckByLightningEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityStruckByLightningEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.ChorusFruit",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$ChorusFruit",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.EnderEntity",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$EnderEntity",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.EnderPearl",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$EnderPearl",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.SpreadPlayersCommand",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$SpreadPlayersCommand",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.TeleportCommand",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$TeleportCommand",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTickEvent",
+      "class": "net.neoforged.neoforge.event.tick.EntityTickEvent",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "EntityTickEvent.Post",
+      "class": "net.neoforged.neoforge.event.tick.EntityTickEvent$Post",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "EntityTickEvent.Pre",
+      "class": "net.neoforged.neoforge.event.tick.EntityTickEvent$Pre",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "EntityTravelToDimensionEvent",
+      "class": "net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ExplosionEvent",
+      "class": "net.neoforged.neoforge.event.level.ExplosionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ExplosionEvent.Detonate",
+      "class": "net.neoforged.neoforge.event.level.ExplosionEvent$Detonate",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ExplosionEvent.Start",
+      "class": "net.neoforged.neoforge.event.level.ExplosionEvent$Start",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ExplosionKnockbackEvent",
+      "class": "net.neoforged.neoforge.event.level.ExplosionKnockbackEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "FinalizeSpawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "FurnaceFuelBurnTimeEvent",
+      "class": "net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GameShuttingDownEvent",
+      "class": "net.neoforged.neoforge.event.GameShuttingDownEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "GetEnchantmentLevelEvent",
+      "class": "net.neoforged.neoforge.event.enchanting.GetEnchantmentLevelEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GetEquipmentDropChanceEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.GetEquipmentDropChanceEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GrindstoneEvent",
+      "class": "net.neoforged.neoforge.event.GrindstoneEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GrindstoneEvent.OnPlaceItem",
+      "class": "net.neoforged.neoforge.event.GrindstoneEvent$OnPlaceItem",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GrindstoneEvent.OnTakeItem",
+      "class": "net.neoforged.neoforge.event.GrindstoneEvent$OnTakeItem",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemAttributeModifierEvent",
+      "class": "net.neoforged.neoforge.event.ItemAttributeModifierEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemAttributeModifierEvent.ItemAttributeModifiersBuilder",
+      "class": "net.neoforged.neoforge.event.ItemAttributeModifierEvent$ItemAttributeModifiersBuilder",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemAttributeModifierEvent.ItemAttributeModifiersBuilder.Key",
+      "class": "net.neoforged.neoforge.event.ItemAttributeModifierEvent$ItemAttributeModifiersBuilder$Key",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemEntityPickupEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemEntityPickupEvent.Post",
+      "class": "net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemEntityPickupEvent.Pre",
+      "class": "net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemEvent",
+      "class": "net.neoforged.neoforge.event.entity.item.ItemEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemExpireEvent",
+      "class": "net.neoforged.neoforge.event.entity.item.ItemExpireEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemFishedEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ItemFishedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemStackedOnOtherEvent",
+      "class": "net.neoforged.neoforge.event.ItemStackedOnOtherEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemTooltipEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.ItemTooltipEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ItemTossEvent",
+      "class": "net.neoforged.neoforge.event.entity.item.ItemTossEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent.CreateSpawnPosition",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent$CreateSpawnPosition",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent.Load",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent$Load",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent.PotentialSpawns",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent$PotentialSpawns",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent.Save",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent$Save",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelEvent.Unload",
+      "class": "net.neoforged.neoforge.event.level.LevelEvent$Unload",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LevelTickEvent",
+      "class": "net.neoforged.neoforge.event.tick.LevelTickEvent",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "LevelTickEvent.Post",
+      "class": "net.neoforged.neoforge.event.tick.LevelTickEvent$Post",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "LevelTickEvent.Pre",
+      "class": "net.neoforged.neoforge.event.tick.LevelTickEvent$Pre",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "LivingBreatheEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingBreatheEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingChangeTargetEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingChangeTargetEvent.ILivingTargetType",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent$ILivingTargetType",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingChangeTargetEvent.LivingTargetType",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent$LivingTargetType",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingConversionEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingConversionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingConversionEvent.Post",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingConversionEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingConversionEvent.Pre",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingConversionEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDamageEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDamageEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDamageEvent.Post",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDamageEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDamageEvent.Pre",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDamageEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDeathEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDeathEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDestroyBlockEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDestroyBlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDropsEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDropsEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingDrownEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingDrownEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEntityUseItemEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEntityUseItemEvent.Finish",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent$Finish",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEntityUseItemEvent.Start",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent$Start",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEntityUseItemEvent.Stop",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent$Stop",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEntityUseItemEvent.Tick",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent$Tick",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEquipmentChangeEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEvent.LivingJumpEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEvent$LivingJumpEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingEvent.LivingVisibilityEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingEvent$LivingVisibilityEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingExperienceDropEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingFallEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingFallEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingGetProjectileEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingGetProjectileEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingHealEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingHealEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingIncomingDamageEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingKnockBackEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingShieldBlockEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingSwapItemsEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingSwapItemsEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingSwapItemsEvent.Hands",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingSwapItemsEvent$Hands",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LivingUseTotemEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.LivingUseTotemEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "LootTableLoadEvent",
+      "class": "net.neoforged.neoforge.event.LootTableLoadEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobDespawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.MobDespawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobDespawnEvent.Result",
+      "class": "net.neoforged.neoforge.event.entity.living.MobDespawnEvent$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent.Added",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent$Added",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent.Applicable",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent$Applicable",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent.Applicable.Result",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent$Applicable$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent.Expired",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent$Expired",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobEffectEvent.Remove",
+      "class": "net.neoforged.neoforge.event.entity.living.MobEffectEvent$Remove",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSpawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSpawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSpawnEvent.PositionCheck",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSpawnEvent$PositionCheck",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSpawnEvent.PositionCheck.Result",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSpawnEvent$PositionCheck$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSpawnEvent.SpawnPlacementCheck",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSpawnEvent$SpawnPlacementCheck",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSpawnEvent.SpawnPlacementCheck.Result",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSpawnEvent$SpawnPlacementCheck$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "MobSplitEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.MobSplitEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ModMismatchEvent",
+      "class": "net.neoforged.neoforge.event.ModMismatchEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ModMismatchEvent.MismatchResolutionResult",
+      "class": "net.neoforged.neoforge.event.ModMismatchEvent$MismatchResolutionResult",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ModMismatchEvent.MismatchedVersionInfo",
+      "class": "net.neoforged.neoforge.event.ModMismatchEvent$MismatchedVersionInfo",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ModifyCustomSpawnersEvent",
+      "class": "net.neoforged.neoforge.event.level.ModifyCustomSpawnersEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ModifyDefaultComponentsEvent",
+      "class": "net.neoforged.neoforge.event.ModifyDefaultComponentsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "NoteBlockEvent",
+      "class": "net.neoforged.neoforge.event.level.NoteBlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "NoteBlockEvent.Change",
+      "class": "net.neoforged.neoforge.event.level.NoteBlockEvent$Change",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "NoteBlockEvent.Note",
+      "class": "net.neoforged.neoforge.event.level.NoteBlockEvent$Note",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "NoteBlockEvent.Octave",
+      "class": "net.neoforged.neoforge.event.level.NoteBlockEvent$Octave",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "NoteBlockEvent.Play",
+      "class": "net.neoforged.neoforge.event.level.NoteBlockEvent$Play",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "OnDatapackSyncEvent",
+      "class": "net.neoforged.neoforge.event.OnDatapackSyncEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PermissionsChangedEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PermissionsChangedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PistonEvent",
+      "class": "net.neoforged.neoforge.event.level.PistonEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PistonEvent.PistonMoveType",
+      "class": "net.neoforged.neoforge.event.level.PistonEvent$PistonMoveType",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PistonEvent.Post",
+      "class": "net.neoforged.neoforge.event.level.PistonEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PistonEvent.Pre",
+      "class": "net.neoforged.neoforge.event.level.PistonEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayLevelSoundEvent",
+      "class": "net.neoforged.neoforge.event.PlayLevelSoundEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayLevelSoundEvent.AtEntity",
+      "class": "net.neoforged.neoforge.event.PlayLevelSoundEvent$AtEntity",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayLevelSoundEvent.AtPosition",
+      "class": "net.neoforged.neoforge.event.PlayLevelSoundEvent$AtPosition",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerBrewedPotionEvent",
+      "class": "net.neoforged.neoforge.event.brewing.PlayerBrewedPotionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerContainerEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerContainerEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerContainerEvent.Close",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerContainerEvent$Close",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerContainerEvent.Open",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerContainerEvent$Open",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerDestroyItemEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerDestroyItemEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEnchantItemEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEnchantItemEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.BreakSpeed",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$BreakSpeed",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.Clone",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$Clone",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.HarvestCheck",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$HarvestCheck",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.ItemCraftedEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$ItemCraftedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.ItemSmeltedEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$ItemSmeltedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.LoadFromFile",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$LoadFromFile",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.NameFormat",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$NameFormat",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.PlayerChangeGameModeEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$PlayerChangeGameModeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.PlayerChangedDimensionEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$PlayerChangedDimensionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.PlayerLoggedInEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$PlayerLoggedInEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.PlayerLoggedOutEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$PlayerLoggedOutEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.PlayerRespawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$PlayerRespawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.SaveToFile",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$SaveToFile",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.StartTracking",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$StartTracking",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.StopTracking",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$StopTracking",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerEvent.TabListNameFormat",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerEvent$TabListNameFormat",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerFlyableFallEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerFlyableFallEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerHeartTypeEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerHeartTypeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.EntityInteract",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$EntityInteract",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.EntityInteractSpecific",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$EntityInteractSpecific",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.LeftClickBlock",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$LeftClickBlock",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.LeftClickBlock.Action",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$LeftClickBlock$Action",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.LeftClickEmpty",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$LeftClickEmpty",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.RightClickBlock",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$RightClickBlock",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.RightClickEmpty",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$RightClickEmpty",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerInteractEvent.RightClickItem",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$RightClickItem",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerNegotiationEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerNegotiationEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerRespawnPositionEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerRespawnPositionEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerSetSpawnEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerSetSpawnEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerSpawnPhantomsEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerSpawnPhantomsEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerSpawnPhantomsEvent.Result",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerSpawnPhantomsEvent$Result",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerTickEvent",
+      "class": "net.neoforged.neoforge.event.tick.PlayerTickEvent",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "PlayerTickEvent.Post",
+      "class": "net.neoforged.neoforge.event.tick.PlayerTickEvent$Post",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "PlayerTickEvent.Pre",
+      "class": "net.neoforged.neoforge.event.tick.PlayerTickEvent$Pre",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "PlayerWakeUpEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerXpEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerXpEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerXpEvent.LevelChange",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerXpEvent$LevelChange",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerXpEvent.PickupXp",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerXpEvent$PickupXp",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PlayerXpEvent.XpChange",
+      "class": "net.neoforged.neoforge.event.entity.player.PlayerXpEvent$XpChange",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PotionBrewEvent",
+      "class": "net.neoforged.neoforge.event.brewing.PotionBrewEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PotionBrewEvent.Post",
+      "class": "net.neoforged.neoforge.event.brewing.PotionBrewEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "PotionBrewEvent.Pre",
+      "class": "net.neoforged.neoforge.event.brewing.PotionBrewEvent$Pre",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ProjectileImpactEvent",
+      "class": "net.neoforged.neoforge.event.entity.ProjectileImpactEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "RegisterBrewingRecipesEvent",
+      "class": "net.neoforged.neoforge.event.brewing.RegisterBrewingRecipesEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterCommandsEvent",
+      "class": "net.neoforged.neoforge.event.RegisterCommandsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterGameTestsEvent",
+      "class": "net.neoforged.neoforge.event.RegisterGameTestsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterSpawnPlacementsEvent",
+      "class": "net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterSpawnPlacementsEvent.MergedSpawnPredicate",
+      "class": "net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent$MergedSpawnPredicate",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterSpawnPlacementsEvent.Operation",
+      "class": "net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent$Operation",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "RegisterStructureConversionsEvent",
+      "class": "net.neoforged.neoforge.event.RegisterStructureConversionsEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ServerAboutToStartEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerAboutToStartEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ServerChatEvent",
+      "class": "net.neoforged.neoforge.event.ServerChatEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ServerLifecycleEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerLifecycleEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ServerStartedEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerStartedEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ServerStartingEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerStartingEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ServerStoppedEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerStoppedEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "ServerStoppingEvent",
+      "class": "net.neoforged.neoforge.event.server.ServerStoppingEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "ServerTickEvent",
+      "class": "net.neoforged.neoforge.event.tick.ServerTickEvent",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "ServerTickEvent.Post",
+      "class": "net.neoforged.neoforge.event.tick.ServerTickEvent$Post",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "ServerTickEvent.Pre",
+      "class": "net.neoforged.neoforge.event.tick.ServerTickEvent$Pre",
+      "throttle": 20,
+      "hint": ""
+    },
+    {
+      "name": "SleepFinishedTimeEvent",
+      "class": "net.neoforged.neoforge.event.level.SleepFinishedTimeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "SpawnClusterSizeEvent",
+      "class": "net.neoforged.neoforge.event.entity.living.SpawnClusterSizeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "StatAwardEvent",
+      "class": "net.neoforged.neoforge.event.StatAwardEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "SweepAttackEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.SweepAttackEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "TagsUpdatedEvent",
+      "class": "net.neoforged.neoforge.event.TagsUpdatedEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "TagsUpdatedEvent.UpdateCause",
+      "class": "net.neoforged.neoforge.event.TagsUpdatedEvent$UpdateCause",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "TradeWithVillagerEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "UseItemOnBlockEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "UseItemOnBlockEvent.UsePhase",
+      "class": "net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent$UsePhase",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "VanillaGameEvent",
+      "class": "net.neoforged.neoforge.event.VanillaGameEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "VillageSiegeEvent",
+      "class": "net.neoforged.neoforge.event.village.VillageSiegeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "VillagerTradesEvent",
+      "class": "net.neoforged.neoforge.event.village.VillagerTradesEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "WandererTradesEvent",
+      "class": "net.neoforged.neoforge.event.village.WandererTradesEvent",
+      "throttle": 0,
+      "hint": ""
+    }
+  ]
+}

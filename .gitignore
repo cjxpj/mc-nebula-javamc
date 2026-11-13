@@ -1,0 +1,68 @@
+# ============================================================
+# 只提交源码 / 文档 / 词库 / 脚本。
+# 运行期数据、安装器依赖、构建产物一律不入库（体积以 GB 计）。
+# ============================================================
+
+# ── Rust ──
+bridge/target/
+
+# ── Java 编译 / 打包产物 ──
+mod/build/
+*.class
+
+# ── 二进制产物（jar 通过 GitHub Release 分发，不进 git）──
+*.jar
+*.dll
+*.so
+*.dylib
+*.pdb
+*.lib
+*.a
+*.o
+
+# ── NeoForge 专用服：安装器下载的依赖、JDK、世界、日志 ──
+server/libraries/
+server/.jdk/
+server/.downloads/
+server/mods/
+server/world/
+server/world_nether/
+server/world_the_end/
+server/logs/
+server/crash-reports/
+server/config/
+server/usercache.json
+server/usernamecache.json
+server/banned-ips.json
+server/banned-players.json
+server/ops.json
+server/whitelist.json
+server/eula.txt
+server/neoforge-*-installer.jar.log
+
+# ── 文档站点由 jar 在开服时铺到 _docs，源头在 mod/docs ──
+server/nebula/_docs/
+
+# ── 插件运行期数据：账号.json 含密码哈希，配置.json 含盐，会话.json 含在线状态 ──
+server/nebula/*/data/
+server/nebula/登录/data/
+
+# ── 隔离回归测试服（另一套 libraries/.jdk/world 与 node_modules）──
+.testserver/
+.testserver.stale-*/
+
+# ── 依赖 / 缓存 / 本地记录 ──
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.screenshots/
+logs/
+.workbuddy/
+
+# ── 编辑器 / 系统 ──
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store

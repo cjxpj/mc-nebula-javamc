@@ -1,0 +1,56 @@
+[f]初始化
+$世界.注册指令 自检 0$
+
+[指令]自检
+SC名:%玩家名%
+SC维:minecraft:overworld
+$世界.设方块 %SC维% 0 100 0 minecraft:diamond_block$
+$世界.设方块状态 %SC维% 1 100 0 minecraft:oak_log axis=x$
+$世界.填充区域 %SC维% 3 100 0 4 100 1 minecraft:gold_block$
+$世界.给物品 %SC名% minecraft:diamond 3$
+$世界.设置模式 创造 %SC名%$
+$世界.加效果 %SC名% minecraft:speed 60 1$
+$世界.玩家加标签 %SC名% regress$
+$世界.设置侧边栏 %SC名% 回归计分板$
+$世界.设置tick冻结 是$
+$世界.执行命令 say REGRESS-ACTION-DONE$
+// 悬浮字：时长拉到 600 tick，留给 RCON 反查；文本走「变量 + 引号 + § 颜色码」，
+// 与伤害显示插件里的写法一致，同时验证多词文本不会被空格切碎。
+SC文:§6§l暴击 §e12.5
+// 坐标也走一次算术（伤害显示里是 [%y%+%身高%]），顺带验证括号运算 → 浮点实参 → 实体位置。
+SCy:[100+50]
+$世界.悬浮字 %SC维% 0 %SCy% 0 "%SC文%" 1.6 1.2 600$
+// 模拟「存档里翻出来的残留」：带 nebula_fx 标签、但宿主的活动列表里没有它。
+// 兜底扫描应当在一秒内把它清掉（清不掉就是永久飘字那个 bug）。
+// 注意：/summon 带 {Tags:[...]} 在这版没生效，补标记放到 [f]重载 里做（见下）。
+$世界.执行命令 summon minecraft:text_display 10 150 10$
+// 治疗事件：先打掉血再回满，下面 [事件]实体治疗 会在日志里留一条 REGRESS-HEAL。
+$世界.生成实体 %SC维% minecraft:cow 5 100 5 {CustomName:'"TestCow"',PersistenceRequired:1b}$
+$世界.实体伤害 TestCow 4$
+$世界.实体治疗 TestCow 4$
+// 已经满血再治一次：宿主应当直接不转发，日志里只留上面一条 REGRESS-HEAL。
+$世界.实体治疗 TestCow 4$
+
+[事件]实体治疗
+$世界.执行命令 say REGRESS-HEAL|数值=%数值%|原因=%原因%|满血=%满血%|身高=%身高%$
+
+[f]重载
+// 给上一轮 summon 出来的 text_display 补 nebula_fx 标记（动作在 [指令] 结束时才落地，
+// 所以查询只能放到重载里做）。打完标记，兜底扫描就该在 1 秒内把它清掉。
+SC表:$世界.取实体列表 minecraft:overworld 200$
+遍历:i,个=%SC表%
+    如果:%个.类型%==minecraft:text_display
+        $世界.实体加标签 %个.id% nebula_fx$
+    如果尾
+结束
+SC名:SelfBot
+V1:$世界.取玩家模式 %SC名%$
+V2:$世界.取玩家状态 %SC名%$
+V3:$世界.取模拟暂停$
+V4:$世界.取物品数 %SC名% minecraft:diamond$
+V5:$世界.玩家有标签 %SC名% regress$
+V6:$世界.取方块 minecraft:overworld 0 100 0$
+V7:$世界.取方块数据 minecraft:overworld 1 100 0$
+V8:$世界.取玩家数量$
+$世界.执行命令 say REGRESS-V1|模式=%V1%|暂停=%V3%|钻石=%V4%|标签=%V5%|方块=%V6%|数量=%V8%$
+$世界.执行命令 say REGRESS-V2|橡木数据=%V7%|维度=%V2.维度%|名称=%V2.名称%$
