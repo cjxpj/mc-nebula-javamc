@@ -18,7 +18,7 @@
 > **注入对象**：词库里统一写 `$世界.取方块 …$`。
 > 文件名 `mc-api-map.md` 沿用旧称，避免各处链接失效。
 
-映射表共 **127 个 `世界` 方法全部有对应函数**（22 个手写 hook + 105 个表驱动规格），
+映射表共 **128 个 `世界` 方法全部有对应函数**（22 个手写 hook + 106 个表驱动规格），
 词库调用时不会再出现「未知方法」。界面统一用「对象 + 点击闭包」。
 统一的规约是「一条映射 = 一个规格 = 一个函数」：
 
@@ -60,13 +60,16 @@
 | `设置权限` | 用 `op` / `deop` 近似「等级 > 0」，不是分级权限 |
 | `设置侧边栏` | 用全局 `nebula_sidebar` 目标，标题可重复更新（已存在走 `modify displayname`，不再 remove/add），暂不设置分数行 |
 | `交互` | `interactOn` 签名随版本浮动，按参数个数反射调用 |
-| `悬浮字` | `text_display` 的 `text` 在 1.21.1 是 **JSON 字符串**（`contains("text", 8)` + `Component.Serializer.fromJson`），不是组件 NBT。写成组件会被静默忽略：实体建得出来，但一个字都没有（`data get … text` 返回 `""`）。宿主先用 `§` 解析器拼样式，再 `Component.Serializer.toJson` 写入；`brightness` / `transformation` / `billboard` 走 codec，解析失败只记日志不影响实体创建。实体带 `nebula_fx` 标签，宿主每秒扫一次「带标签但不在活动列表」的残留并 discard，开服再扫一遍已加载区块——区块卸载 / 崩服留下的飘字不会永久留在存档里。**平滑要靠 `teleport_duration`（= Java 常量 `TAG_POS_ROT_INTERPOLATION_DURATION`）**：默认 0 时客户端每收到一次位置包就 `applyTargetPosAndRot` + `setOldPosAndRot`，逐 tick 改位置会变成 20 Hz 硬跳；给 2 tick 后走 `lerpPositionAndRotationStep`，渲染按帧过渡 |
+| `悬浮字` | `text_display` 的 `text` 是 **JSON 字符串**（1.21.1 用 `Component.Serializer.fromJson`，1.21.11 改用 `ComponentSerialization.CODEC`），不是组件 NBT。写成组件会被静默忽略：实体建得出来，但一个字都没有（`data get … text` 返回 `""`）。宿主先用 `§` 解析器拼样式，再用 `ComponentSerialization.CODEC.encodeStart(JsonOps.INSTANCE, …)` 写入；`brightness` / `transformation` / `billboard` 走 codec，解析失败只记日志不影响实体创建。实体带 `nebula_fx` 标签，宿主每秒扫一次「带标签但不在活动列表」的残留并 discard，开服再扫一遍已加载区块——区块卸载 / 崩服留下的飘字不会永久留在存档里。**平滑要靠 `teleport_duration`（= Java 常量 `TAG_POS_ROT_INTERPOLATION_DURATION`）**：默认 0 时客户端每收到一次位置包就 `applyTargetPosAndRot` + `setOldPosAndRot`，逐 tick 改位置会变成 20 Hz 硬跳；给 2 tick 后走 `lerpPositionAndRotationStep`，渲染按帧过渡 |
 
 > 原先的 7 个占位已消除 6 个：tick 四方法改走 1.20.3 起就有的原生 `/tick`（不需要 Mixin），
 > `设置区块半径` / `重发区块` 改走 `ClientboundSetChunkCacheRadiusPacket` /
 > `ClientboundLevelChunkWithLightPacket` 两个原生封包。**目前只剩 `打开背包` 一个占位。**
 
-### 1.21.1 / NeoForge 21.1.265 真机实测（2026-11-08）
+### 旧版现场实测（1.21.1 环境，2026-11-08 历史记录）
+
+> 以下数值是 1.21.1 现场的记录，保留作对照。主线已迁移到 **Minecraft 1.21.11 / NeoForge 21.11.42**，
+> 当前回归结论见本节末尾的「1.21.11 主线回归」。
 
 独立测试服（隔离端口 25566 / RCON，不碰线上 world）跑全量查询与代表性动作后的结论：
 
@@ -78,14 +81,15 @@
 | 区块未加载 → 查询为空 | 方块类查询先用 `level.isLoaded` 判一次，未加载返回空串 / `{}` / `[]`。实测 `/forceload add 0 0` 之后 `区块已加载=是`，四类方块查询立刻恢复。词库应先 `$世界.区块已加载$` 或用 `/forceload` |
 | 规则名按 id 匹配 | 静态常量字段名不随版本稳定，曾导致 `doDaylightCycle` 查不到；现按 `GameRules.Key#getId()` 匹配，两种写法都返回正确值 |
 | 实体列表要设上限 | 默认最多 512 个实体；`取实体列表 维度 1` 实测只返回 1 条。整表可能数百字符，而 `say` 有 256 字符 chat 上限，长结果必须分批输出或传 `上限` |
-| 玩家类动作必须用名字 | 1.21.1 实测 `give <uuid>` / `experience set <uuid>` 会报「Only players may be affected…」：`tp` 接受实体所以 UUID 能用，但只允许玩家的命令会拒绝 UUID 字面量。宿主统一用 `GameProfile.getName()`；**不能取 `getName()`**，它会被 `设置名牌` 改成显示名 |
+| 玩家类动作必须用名字 | 1.21.1 / 1.21.11 实测 `give <uuid>` / `experience set <uuid>` 会报「Only players may be affected…」：`tp` 接受实体所以 UUID 能用，但只允许玩家的命令会拒绝 UUID 字面量。宿主统一用 `GameProfile.name()`（1.21.1 时代叫 `getName()`）；**不能取实体的 `getName()`**，它会被 `设置名牌` 改成显示名 |
 | 玩家在线场景全通 | mineflayer 假玩家进服后，11 个玩家查询全部返回真实数据；`给物品` / `给予物品` / `扣物品` / `设背包物品` / `设置副手` / `设置等级` / `加等级` / `加经验` / `设置经验进度` / `设置饥饿` / `设置饱和度` / `设置飞行` / `设置能力` / `设置名牌` / `玩家加标签` / `传送玩家` / `设置侧边栏` 等经读回或 NBT 反查生效；`打开背包` / `设置区块半径` / `重发区块` 三个占位按预期只记 WARN |
 | 命令失败现在可见 | 宿主改走 Brigadier `parse + execute`（`performPrefixedCommand` 在 1.21.1 返回 `void` 且把异常吞进 `sendFailure`，叠加 `withSuppressedOutput` 后完全静默）。真正的 `CommandSyntaxException` 会打 WARN；`gamemode` 模式没变、`deop` 非 OP 这类「无变化」不记，避免噪音 |
 | 占位从 7 降到 1 | 真机验证：`/tick query` 显示 `The game is frozen / Target tick rate: 40.0`，`取模拟暂停` 在 freeze / unfreeze 后分别读回 是 / 否，`步进tick` 无异常；玩家在线时 `设置区块半径`（`ClientboundSetChunkCacheRadiusPacket`）与 `重发区块`（`ClientboundLevelChunkWithLightPacket`）都不抛异常。仅 `打开背包` 仍是占位 |
 | 动作效果反查全通 | 12 项原版反查全部 PASS：`设方块`(diamond_block)、`设方块状态`(`oak_log[axis=x]`)、`设方块数据`(`stone[]`)、`填充区域`(gold_block)、下界 `设方块`(glowstone)、`生成生物`(pig×2)、`设难度`(Hard)、`设时间`(6000+)、`加效果`(speed amplifier=1)、`设置模式`(创造)、`设置侧边栏`(标题可更新)；`execute in minecraft:the_nether` 跨维度路径生效 |
 | 多玩家 / 跨维度 | 两个假玩家在线时 `取玩家列表` 返回 2 条、`取玩家数量=2`；`传送玩家` 到 `minecraft:the_nether` 后 `取玩家状态.维度` 变成 the_nether |
 | 告警只留真错误 | 原版把「状态没变 / 粒子无人可见 / objective 不存在」也做成 `CommandSyntaxException`，宿主已过滤；`设置侧边栏` 改用 Scoreboard API 判断，不再发注定失败的 `remove`。真失败（目标不存在、区块未加载、UUID 被拒绝）仍打 WARN |
-| 一键回归 | `python mod/selftest/regress.py`（`--keep` 保留现场）：自动准备隔离服（端口 25566 / RCON 25576，目录联接共享 `libraries`/`.jdk`，独立 `level-name`）、装 mineflayer、启动两个假玩家、跑 `selftest/wordlib` 词库、按 `selftest/checks.json` 批量反查、恢复 tick、RCON `stop` 并清理。实测 18/18 PASS、0 告警 |
+| 一键回归 | `python mod/selftest/regress.py`（`--keep` 保留现场）：自动准备隔离服（端口 25566 / RCON 25576，目录联接共享 `libraries`/`.jdk`，独立 `level-name`）、装 mineflayer、启动两个假玩家、跑 `selftest/wordlib` 词库、按 `selftest/checks.json` 批量反查、恢复 tick、RCON `stop` 并清理。实测 19/19 PASS、0 告警 |
+| 1.21.11 主线回归 | `python mod/selftest/regress.py` 在 1.21.11 / 21.11.42 隔离服上 **19/19 PASS、0 告警**；双假玩家进服、`EntityJoinLevelEvent` 动态注册、悬浮字插值 / 颜色 / 残留清理、治疗事件、12 项原版反查全部通过。事件清单 267 个类来自 `neoforge-21.11.42-universal.jar` |
 | 手工复现 | 无玩家场景用 `[f]初始化` / `[f]重载` 跑查询与读回；玩家场景用 mineflayer 假玩家执行 `/自检` 触发 `[指令]` 词条；动作效果用原版 `execute if …` / `data get entity …` 反查。RCON `/nebula reload <插件>` 触发第二轮 |
 
 词库层的两个坑（不属于 API 映射，但调用时会踩）：
@@ -199,7 +203,7 @@
 | `实体加标签` / `实体移除标签` / `实体有标签` | 实体id 标签 | `Entity#addTag/removeTag/getTags` | 确认 |
 | `取实体属性` | 实体id 属性 | 反射查 `Attributes` 常量 + `getAttributeValue` | 已落地（反射） |
 | `实体隐身` | 实体id 是\|否 | `Entity#setInvisible` | 已落地 |
-| `悬浮字` | 维度 X Y Z 文本 [缩放] [上升] [时长] | `Display.TextDisplay`：`EntityType.create(CompoundTag, Level)`（键名与 `/summon` 一致，1.21.1 的 setter 全是 private），宿主逐 tick `setPos` 上浮、到时 `discard` | 已落地 |
+| `悬浮字` | 维度 X Y Z 文本 [缩放] [上升] [时长] | `Display.TextDisplay`：1.21.11 走 `EntityType.create(TagValueInput, Level, EntitySpawnReason.COMMAND)`（旧版是 `CompoundTag` 重载；键名与 `/summon` 一致，setter 全是 private），宿主逐 tick `setPos` 上浮、到时 `discard` | 已落地 |
 
 ## 6. 交互 / 事件
 
@@ -211,7 +215,7 @@
 | `取消事件` | — | 桥接层本次事件槽位 → `event.setCanceled(true)`（通用事件桥里对实现 `ICancellableEvent` 的事件同样生效） | 确认 |
 
 > 事件源不止上表：宿主内置 6 个中文事件、通用事件桥按订阅对接 `nebula/events.json`
-> 里的 262 个 NeoForge 事件类（`EventBridge` + `eventTriggers(handle)`）。清单由
+> 里的 267 个 NeoForge 事件类（`EventBridge` + `eventTriggers(handle)`）。清单由
 > `mod/tools/gen_events.py` 生成并打进 jar，升级 NeoForge 要重新生成 + 全量构建。
 > `世界` 方法数量的单测只锁本契约表，不锁事件清单。
 
@@ -228,8 +232,9 @@
 | `界面物品` | 面 槽位 物品 数量 名称 说明 [发光] | 校验对象归属后转成 `设界面物品` 动作（`ItemStack` + `CUSTOM_NAME / LORE / ENCHANTMENT_GLINT_OVERRIDE`） | 确认 |
 | `界面数据` | 面 数据… | 校验对象归属后转成 `设界面数据` 动作 | 确认 |
 | `打开界面` | 面 回调 | 存下函数值闭包，发 `开界面` 动作（带 `界面ID`）；同一玩家的旧界面对象自动失效 | 确认 |
-| `点击消息` | 玩家 段JSON | 一行可点击聊天：段是 `[{文,命令,悬停}]`，宿主给每段挂 `ClickEvent.RunCommand`；点击即以玩家身份执行命令 | 确认（1.21.1 实测） |
-| `输入界面` | 玩家 标题 回调 | 铁砧命名框当文本框：存函数值闭包，发 `输入界面` 动作（带 `界面ID`）；输入框初始为空，点成品格时 `clickGui` 回传 `{玩家名,文本,动作}`，其它槽位只读 | 确认（1.21.1 实测） |
+| `点击消息` | 玩家 段JSON | 一行可点击聊天：段是 `[{文,命令,悬停}]`，宿主给每段挂 `ClickEvent.RunCommand`；点击即以玩家身份执行命令 | 确认（1.21.1 / 1.21.11 实测） |
+| `输入界面` | 玩家 标题 回调 | 铁砧命名框当文本框：存函数值闭包，发 `输入界面` 动作（带 `界面ID`）；输入框初始为空，点成品格时 `clickGui` 回传 `{玩家名,文本,动作}`，其它槽位只读 | 确认（1.21.1 / 1.21.11 实测） |
+| `弹窗输入` | 玩家 标题 提示 标签 最长 提交指令 | 1.21.6+ 原版 dialog：`ClientboundShowDialogPacket(Holder.direct(NoticeDialog))`，一个 `minecraft:text` 输入框 + `dynamic/run_command` 模板 `<提交指令> $(pw)`；点提交由客户端发出 `<提交指令> <输入值>`，无需数据包 / `/reload` | 1.21.11 落地 |
 | `关闭界面` | 面 | 发 `关界面` 动作并释放闭包 | 确认 |
 | `标题` | 玩家 主标题 [副标题] | `ClientboundSetTitlesAnimationPacket` + `SetTitleTextPacket` + `SetSubtitleTextPacket` | 确认 |
 | `音效` | 玩家 音效 [音量] [音调] | `ServerPlayer#playNotifySound(SoundEvent, SoundSource, float, float)` | 确认 |
@@ -248,7 +253,7 @@
 | 能力 | 现状 | 建议 |
 | --- | --- | --- |
 | 物品栏点击事件 | 已用自定义 `ChestMenu#clicked` 拦截，按界面对象 id 调点击闭包；只覆盖词库打开的箱子界面，原版容器 / 玩家背包界面不接管 | 需要监听任意容器时再考虑 Mixin `AbstractContainerMenu#clicked` |
-| tick 冻结 / 步进 / 加速 | 1.20.3 起有原生 `/tick`，1.21.1 已用命令 + `ServerTickRateManager` 落地；真机验证 frozen / rate 40 / unfreeze 都生效 | 无需 Mixin |
+| tick 冻结 / 步进 / 加速 | 1.20.3 起有原生 `/tick`，1.21.1 与 1.21.11 均已用命令 + `ServerTickRateManager` 落地；真机验证 frozen / rate 40 / unfreeze 都生效 | 无需 Mixin |
 | 客户端本地背包界面 | 只有 `打开背包` 仍是占位（服务端不管理 `InventoryScreen`）；`设置区块半径` / `重发区块` 已用原生封包落地 | 用 `创建界面` + `打开界面` 打开箱子界面 |
 | 客户端侧动作（粒子 / 标题 / 音效）执行端 | 服务端发命令 / 发包 | 统一走服务端，不需要客户端 mod |
 | SNBT 实体生成 | 原版 SNBT 解析器不公开；改为 `summon 类型 坐标 [NBT]`，NBT 不含空格 | 需要完整 SNBT 时再引入内部解析器 |

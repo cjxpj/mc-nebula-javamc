@@ -15,7 +15,7 @@ mod/
 ├── README.md                                  ← 本文
 ├── docs/                                      ← 文档（与 mod 源码同一工程）
 │   ├── plugin-guide.md                        ← 词库插件开发指南（主入口）
-│   ├── apis/                                  ← LLSE 体例的 API 手册（127 条，手写维护）
+│   ├── apis/                                  ← LLSE 体例的 API 手册（128 条，手写维护）
 │   ├── index.html                             ← 浏览器入口（离线单文件，纯静态无脚本）
 │   ├── README.md                              ← 索引、事实来源与维护约定
 │   ├── neoforge.md                            ← 设计决策 + 实现现状
@@ -33,7 +33,7 @@ mod/
 > `docs/mc-api-map.md` 不只是说明文档：Rust 桥接层用 `include_str!` 把它编进单测，逐条断言「文档里的方法都有函数、函数都写进了文档」。增删方法要同时动文档表格、规格表、宿主分支并跑测试，步骤见该文档第 0 节末尾。
 
 `build.ps1`：Rust 原生库由 `../bridge` 构建，Java 类、`META-INF` 与原生库一起打进
-`build/nebula-neoforge-bridge-0.1.0.jar` 并复制到 `../server/mods/`。**没有 Gradle 工程**。
+`build/nebula-neoforge-bridge-0.2.0.jar` 并复制到 `../server-1.21.11/mods/`。**没有 Gradle 工程**。
 
 ## 2. 类结构（已落地）
 
@@ -70,8 +70,8 @@ mod/
 
 见 [`docs/neoforge.md`](docs/neoforge.md) 第 8 节。
 
-- 版本已锁定：Minecraft 1.21.1 / NeoForge 21.1.265 / Java 21（服务端自带 `.jdk/jdk-21.0.13+9`）。
-- `build.ps1` 四步：`cargo build --release` → `javac`（classpath 取 `../server/libraries`
+- 版本已锁定：Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21（服务端自带 `.jdk/jdk-*`）。
+- `build.ps1` 四步：`cargo build --release` → `javac`（classpath 取 `../server-1.21.11/libraries`
   下除 `-slim` / `-unpacked` 外的官方映射 jar）→ 复制 `neoforge.mods.toml` 与 dll →
   `jar --create` 并部署。只改 Java 用 `-SkipRust`，`-RustTargetDir` 可指定 Rust 产物目录。
   **引擎 `crates/nebula` 不在指纹链内**：引擎有更新时改用 [`../bridge/pack.ps1`](../bridge/README.md)
@@ -88,7 +88,7 @@ mod/
 
 ## 5. 与运行期的关系
 
-mod jar 部署到 `../server/mods/`；词库根**固定**为 `<gameDir>/nebula/`（见
-[`../server/README.md`](../server/README.md)）。改词库不需要重启服务端，`/nebula reload`
+mod jar 部署到 `../server-1.21.11/mods/`；词库根**固定**为 `<gameDir>/nebula/`（见
+[`../server-1.21.11/README.md`](../server-1.21.11/README.md)）。改词库不需要重启服务端，`/nebula reload`
 或 `/nebula debug` 热重载；改 mod / 桥接需重启。升级版本前先跑
-`python selftest/regress.py`（隔离服 + 双假玩家 + 原版命令反查，18/18 PASS）。
+`python selftest/regress.py`（隔离服 + 双假玩家 + 原版命令反查，19/19 PASS）。

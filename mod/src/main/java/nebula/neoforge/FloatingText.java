@@ -21,6 +21,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.network.chat.ComponentSerialization;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.entity.EntitySpawnReason;
 
 /**
  * 词库驱动的悬浮字（RPG 飘字）。
@@ -117,7 +122,7 @@ final class FloatingText {
         // `text` 在这个版本的 TextDisplay 里是 **JSON 字符串**（`contains("text", 8)` +
         // `Component.Serializer.fromJson`），不是组件 NBT；写错类型会被静默忽略，
         // 实体建出来但没有字。
-        String json = Component.Serializer.toJson(legacy(text), level.registryAccess());
+        String json = ComponentSerialization.CODEC.encodeStart(JsonOps.INSTANCE, legacy(text)).result().orElseThrow().toString();
         if (json == null) {
             warnOnce("悬浮字文本无法序列化为 JSON：" + text);
             return;
@@ -141,7 +146,7 @@ final class FloatingText {
         tag.put("transformation", transformation(scale));
         tag.put("Tags", fxTags());
 
-        Optional<Entity> created = EntityType.create(tag, level);
+        Optional<Entity> created = EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag), level, EntitySpawnReason.COMMAND);
         if (created.isEmpty()) {
             warnOnce("悬浮字实体创建失败（text_display NBT 未被接受）");
             return;
@@ -222,7 +227,7 @@ final class FloatingText {
         }
         if (!stale.isEmpty()) {
             LOG.info("[星云] 清理了 {} 个残留悬浮字（{}）", stale.size(),
-                    level.dimension().location());
+                    level.dimension().identifier());
         }
     }
 

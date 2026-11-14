@@ -119,14 +119,14 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 - `取TPS` / `取MSPT` / `取服务器tick` 由宿主统计 `ServerTickEvent.Pre/Post` 的 40 tick 滑窗。
 - 原先的 7 个占位已消除 6 个：tick 四方法走原生 `/tick` 命令 + `ServerTickRateManager`（1.20.3 起就有，不需要 Mixin），`设置区块半径` / `重发区块` 走 `ClientboundSetChunkCacheRadiusPacket` / `ClientboundLevelChunkWithLightPacket`。**目前只剩 `打开背包` 一个占位**（玩家背包是客户端本地 `InventoryScreen`），详见映射文档「明确降级 / 占位」。
 
-### 5.2 词库调用注意（1.21.1 真机实测）
+### 5.2 词库调用注意（真机实测，1.21.1 起 / 1.21.11 复核）
 
 - `%时间%`（`Value::Time`）/ `%版本%`（引擎版本）等是引擎内置系统变量，词库给同名变量赋值会被遮蔽，变量名要加前缀。
 - 动作是**延迟执行**的：同一词条里 `$世界.设方块 …$` 之后立刻 `$世界.取方块 …$` 读到的仍是旧值，要到下一次事件 / reload 才能读到效果。
 - 方块类查询对未加载区块返回空串 / `{}` / `[]`；先 `$世界.区块已加载$`，或用 `/forceload add` 强加载。
 - `$世界.执行命令 say …$` 受 256 字符 chat 上限；`取实体列表 维度 上限` 可限制条数，`取方块标签` / `获取方块` 的长结果要分批输出。
 - 宿主命令改走 Brigadier `parse + execute`，真正的 `CommandSyntaxException` 会打 WARN；原版把「状态没变 / 粒子无人可见 / objective 不存在」也做成异常，宿主统一过滤，只剩真失败（目标不存在、区块未加载、UUID 被拒绝）。`设置侧边栏` 改用 Scoreboard API 判断目标是否已存在，避免发注定失败的命令。验证动作建议用查询读回或原版 `execute if …` 反查。
-- 玩家类命令目标用 `GameProfile.getName()`：`give` / `experience` / `effect` 等「只允许玩家」的命令会拒绝 UUID 字面量（1.21.1 实测），而 `tp` 接受实体所以 UUID 反而能用——两边不统一会静默失败。`getName()` 是显示名，会被 `设置名牌` 改掉，不能用。
+- 玩家类命令目标用 `GameProfile.name()`（1.21.1 时代叫 `getName()`）：`give` / `experience` / `effect` 等「只允许玩家」的命令会拒绝 UUID 字面量（1.21.1 与 1.21.11 都实测过），而 `tp` 接受实体所以 UUID 反而能用——两边不统一会静默失败。实体的 `getName()` 是显示名，会被 `设置名牌` 改掉，不能用。
 - 高层覆盖由单测 `every_method_has_a_host_handler` 锁住：规格表里的每个查询 / 动作都必须在 `McApi` / `McActions` / `NebulaMod` 的 switch 里有分支。
 
 ### 5.1 指令与界面
@@ -184,7 +184,7 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 
 安全边界：测试服在 `.testserver`，用目录联接共享 `libraries` / `.jdk`，独立
 `level-name`；清理时先 `rmdir` 摘掉联接再删目录，并校验线上 `libraries` / `.jdk` / `world`
-完好，**绝不触碰 `server/world`**。升级 Minecraft / NeoForge 版本后先跑这条命令，再按需更新
+完好，**绝不触碰 `server-1.21.11/world`**。升级 Minecraft / NeoForge 版本后先跑这条命令，再按需更新
 `checks.json` 里的断言。
 
 ## 10. 一键打包（先 dll，后 jar）
@@ -199,7 +199,7 @@ powershell -ExecutionPolicy Bypass -File bridge/pack.ps1 -Regression  # 打包 +
 顺序固定，**不能颠倒、也不能用 `-SkipRust`**：
 
 1. `[1/2]` `cargo build --release` 用当前引擎 crate 重新链接 `nebula_jni.dll`；失败立即停止，绝不拿旧 dll 打 jar。
-2. `[2/2]` 调 `mod/build.ps1` 走**全量分支**（内部再跑一次 cargo 是 no-op，目的是重写 `nebula_jni.manifest.json`，让原生库清单重新绑定到新 dll 哈希），完成 javac / 文档 / 打 jar / 部署到 `server/mods`。
+2. `[2/2]` 调 `mod/build.ps1` 走**全量分支**（内部再跑一次 cargo 是 no-op，目的是重写 `nebula_jni.manifest.json`，让原生库清单重新绑定到新 dll 哈希），完成 javac / 文档 / 打 jar / 部署到 `server-1.21.11/mods`。
 3. 默认跑 `regress.py --verify-only`；加 `-Regression` 改跑完整隔离服回归。
 
 **为什么需要它**：`build.ps1 -SkipRust` 信任 `target/release/nebula_jni.manifest.json`，而指纹链只覆盖 `bridge/src` + `Cargo.toml`；引擎 `crates/nebula` 是仓库外的 path 依赖，**不在链内**。引擎一更新却用 `-SkipRust`，旧 dll 会被静默打进 jar，jar manifest / dll 内嵌指纹 / `--verify-only` 全部照旧通过（假 PASS）。
@@ -208,7 +208,7 @@ powershell -ExecutionPolicy Bypass -File bridge/pack.ps1 -Regression  # 打包 +
 
 - 从 `Cargo.toml` 读引擎路径，计算引擎 crate（`Cargo.toml` / `build.rs` / `src/**/*.rs`）的 SHA256，与 `target/release/nebula_engine.json` 比对并打印 `unchanged` / `CHANGED`。这份记录把「哪个引擎树产出了哪个 dll」补进信任链，每次打包后重写。
 - 若引擎指纹变了但 dll 字节没变，直接抛错停在第 1 步（提示 `cargo clean -p nebula`），不产出 jar。
-- 部署前检查有没有 MC 服务端 java 进程（`win_args.txt` / `@libraries/net/neoforged` 特征），有就拦住——线上服开着时覆盖 `server/mods` 会因 ModLauncher 懒加载类崩服。已验证 IDE 的 java 进程不会误判。
+- 部署前检查有没有 MC 服务端 java 进程（`win_args.txt` / `@libraries/net/neoforged` 特征），有就拦住——线上服开着时覆盖 `server-1.21.11/mods` 会因 ModLauncher 懒加载类崩服。已验证 IDE 的 java 进程不会误判。
 
 参数：`-NoVerify` 跳过校验、`-Force` 绕过两个守卫（服务端进程 / stale dll）、`-RustTargetDir <path>` 自定义 cargo target 目录（同时透传给 `build.ps1`）。**脚本必须保持纯 ASCII**：PowerShell 5.1 按 GBK 读无 BOM 的 `.ps1`，中文字符串会吃掉引号导致 ParserError。
 

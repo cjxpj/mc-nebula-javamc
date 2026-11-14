@@ -1,6 +1,7 @@
 # Build the NeoForge bridge mod: Rust native library + Java classes + resources,
-# then deploy the jar to ../server/mods (mod/ and server/ are siblings under javamc/).
-# Usage: powershell -ExecutionPolicy Bypass -File build.ps1 [-SkipRust] [-RustTargetDir <path>]
+# then deploy the jar to <ServerDir>/mods. Server dirs are isolated per MC version
+# (default ../server-1.21.11; -ServerDir points at another isolated server dir).
+# Usage: powershell -ExecutionPolicy Bypass -File build.ps1 [-SkipRust] [-RustTargetDir <path>] [-ServerDir <path>]
 #
 # The jar carries META-INF/nebula-build.json: SHA256 of every Rust/Java source file
 # used for this build. regress.py compares it with the working tree, so a stale jar
@@ -8,15 +9,21 @@
 # NOTE: keep this file pure ASCII. PowerShell 5.1 reads BOM-less .ps1 as GBK.
 param(
     [switch]$SkipRust,
-    [string]$RustTargetDir = ""
+    [string]$RustTargetDir = "",
+    [string]$ServerDir = ""
 )
 
 $ErrorActionPreference = 'Stop'
 $modDir = $PSScriptRoot
 $javamcDir = Split-Path -Parent $modDir
-$serverDir = Join-Path $javamcDir 'server'
+$serverDir = if ($ServerDir) { $ServerDir } else { Join-Path $javamcDir 'server-1.21.11' }
 $bridgeDir = Join-Path $javamcDir 'bridge'
-$jdkBin = Join-Path $serverDir '.jdk\jdk-21.0.13+9\bin'
+# Each version has its own .jdk; discover it instead of pinning one patch level.
+$jdkRoot = Join-Path $serverDir '.jdk'
+$jdkHome = Get-ChildItem -LiteralPath $jdkRoot -Directory -Filter 'jdk-*' -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending | Select-Object -First 1
+if (-not $jdkHome) { throw "No JDK found under $jdkRoot" }
+$jdkBin = Join-Path $jdkHome.FullName 'bin'
 # Version has ONE source of truth: the mod metadata NeoForge itself reads. The jar name
 # and the docs/version.txt shipped to <gameDir>/nebula/_docs are both derived from it,
 # so bumping the mod version cannot leave a stale copy in either place.

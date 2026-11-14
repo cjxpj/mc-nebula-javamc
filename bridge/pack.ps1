@@ -16,13 +16,15 @@
 #        [-NoVerify]            skip the post-build verification entirely
 #        [-Force]               bypass the running-server guard and the stale-dll guard
 #        [-RustTargetDir <path>] use a custom cargo target directory (passed to build.ps1 too)
+#        [-ServerDir <path>]     target MC version's server dir (default javamc/server)
 #
 # NOTE: keep this file pure ASCII. PowerShell 5.1 reads BOM-less .ps1 as GBK.
 param(
     [switch]$Regression,
     [switch]$NoVerify,
     [switch]$Force,
-    [string]$RustTargetDir = ""
+    [string]$RustTargetDir = "",
+    [string]$ServerDir = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -102,7 +104,7 @@ if ($prev -and $prev.engineSha256 -eq $engineHash) {
 }
 Write-Host "[engine] $engineRoot"
 
-# Overwriting server/mods while a server is up corrupts ModLauncher's lazy class
+# Overwriting server-1.21.11/mods while a server is up corrupts ModLauncher's lazy class
 # loading (NoClassDefFoundError). Block that unless explicitly overridden.
 if (-not $Force) {
     $servers = @(Get-CimInstance Win32_Process -Filter "name='java.exe'" |
@@ -129,7 +131,14 @@ $dllAfter = Get-FileSha $dllPath
 if ($dllBefore -and $dllBefore -eq $dllAfter) {
     Write-Host "[dll] up to date $($dllAfter.Substring(0, 12))..."
     if ($engineChanged -and -not $Force) {
-        throw "Engine sources changed but the dll bytes did not. Cargo may have reused a stale artifact; run 'cargo clean -p nebula' and retry (or -Force to override)."
+        # The dll may already have been relinked by a full build.ps1 run, which
+        # does not update nebula_engine.json. Only block when the dll still
+        # matches the one recorded for the OLD engine fingerprint.
+        $recordedDll = if ($prev) { $prev.dllSha256 } else { $null }
+        if (-not $recordedDll -or $recordedDll -eq $dllAfter) {
+            throw "Engine sources changed but the dll still matches the recorded one. Cargo may have reused a stale artifact; run 'cargo clean -p nebula' and retry (or -Force to override)."
+        }
+        Write-Host "[engine] engine changed, but dll was relinked since the last record ($($recordedDll.Substring(0, 12))... -> $($dllAfter.Substring(0, 12))...); continuing"
     }
 } else {
     $beforeLabel = if ($dllBefore) { $dllBefore.Substring(0, 12) } else { '(none)' }
@@ -142,6 +151,7 @@ if ($dllBefore -and $dllBefore -eq $dllAfter) {
 Write-Host "=== [2/2] Build jar + deploy (full build.ps1, never -SkipRust) ==="
 $buildArgs = @{}
 if ($RustTargetDir) { $buildArgs['RustTargetDir'] = $RustTargetDir }
+if ($ServerDir) { $buildArgs['ServerDir'] = $ServerDir }
 & $buildPs1 @buildArgs
 
 $finalDll = Get-FileSha $dllPath
@@ -166,10 +176,12 @@ if (-not $NoVerify) {
     Write-Host "=== Verify: content fingerprint (and regression if -Regression) ==="
     Push-Location $javamcDir
     try {
+        $regressArgs = @()
+        if ($ServerDir) { $regressArgs += @('--server-dir', $ServerDir) }
         if ($Regression) {
-            & python $regressPy
+            & python $regressPy @regressArgs
         } else {
-            & python $regressPy --verify-only
+            & python $regressPy --verify-only @regressArgs
         }
         if ($LASTEXITCODE -ne 0) { throw "regress.py failed ($LASTEXITCODE)" }
     } finally {
@@ -177,4 +189,4 @@ if (-not $NoVerify) {
     }
 }
 
-Write-Host "=== Pack complete: dll $($finalDll.Substring(0, 12))... -> jar deployed to server/mods ==="
+Write-Host "=== Pack complete: dll $($finalDll.Substring(0, 12))... -> jar deployed to server-1.21.11/mods ==="

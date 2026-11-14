@@ -10,18 +10,18 @@
 
 ## 1. 目标与边界
 
-- **宿主**：Minecraft Java 版专用服务端（1.21.1 / NeoForge 21.1.265 / Java 21）。
+- **宿主**：Minecraft Java 版专用服务端（1.21.11 / NeoForge 21.11.42 / Java 21）。
 - **词库**：`<gameDir>/nebula/<插件名>/`，入口 `main.n`，同目录顶层 `.n` 自动合并。
 - **桥接**：NeoForge mod 通过 JNI 调用 Rust `cdylib`，Rust 静态链接 `crates/nebula`。
 - **业务**：全部写在 `.n` 词库；Java 侧只做事件转发、命令注册、`世界` 原语与界面容器。
 - **不做**：客户端 mod、网络封包、词库下发、跨进程 IPC。
-- **已落地规模**：127 个 `世界` 方法（39 类查询分支 + 动作），5 个随服词库插件，一键回归自检 18/18 PASS。
+- **已落地规模**：128 个 `世界` 方法（39 类查询分支 + 动作），5 个随服词库插件，一键回归自检 19/19 PASS。
 
 ## 2. 运行时架构
 
 ```text
 NeoForge 专用服务端
-  ├─ mods/nebula-neoforge-bridge-0.1.0.jar
+  ├─ mods/nebula-neoforge-bridge-0.2.0.jar
   │    ├─ nebula/neoforge/
   │    │    ├─ NebulaMod.java       @Mod 入口：事件监听、/nebula 注册、动作落地
   │    │    ├─ NativeBridge.java    JNI 声明 + 原生库解压加载
@@ -189,8 +189,8 @@ public final class NebulaMod {
 
 ### 5.2 通用事件桥（事件总线全量映射）
 
-`mod/tools/gen_events.py` 在构建期从 `neoforge-21.1.265-universal.jar` 抽出
-`net/neoforged/neoforge/event/**` 下的 262 个事件类，写成 jar 内的
+`mod/tools/gen_events.py` 在构建期从 `neoforge-21.11.42-universal.jar` 抽出
+`net/neoforged/neoforge/event/**` 下的 267 个事件类，写成 jar 内的
 `nebula/events.json`（`name` = Java 类简名，内部类用 `.` 代替 `$`；`class` = 完整类名；
 `throttle` = tick 类事件的节流周期；`hint` = 加载期事件提示）。
 
@@ -248,11 +248,19 @@ public final class NebulaMod {
 
 | 项 | 当前值 |
 | --- | --- |
-| Minecraft | 1.21.1 |
-| NeoForge | 21.1.265（依赖范围 `[21.1,22)`） |
-| Java | 21（服务端自带 `.jdk/jdk-21.0.13+9`） |
+| Minecraft | 1.21.11 |
+| NeoForge | 21.11.42（依赖范围 `[21.11,21.12)`） |
+| Java | 21（服务端自带 `.jdk/jdk-*`） |
 | Rust | stable，`cdylib`，`jni` crate |
 | 构建 | **没有 Gradle**：`build.ps1` 直接调 `cargo build --release` + `javac` + `jar` |
+
+**1.21.11 迁移要点**（旧 1.21.1 服已删除，本目录是唯一主服）：`ResourceLocation` → `Identifier`、
+`GameProfile.getName()` → `name()`、`Inventory` 字段私有化后走 `McSupport.inventorySlots()` 槽位视图、
+`Component.Serializer` → `ComponentSerialization.CODEC`、`EntityType.create` → `TagValueInput` + `EntitySpawnReason.COMMAND`、
+`hasPermission(int)` 删除后改走 `Commands.hasPermission(LEVEL_*)` / `permissions().hasPermission(...)`。
+常量池方法引用是懒解析的，用 1.21.1 编译的 jar 放到 1.21.11 上会「服起得来、玩家一进就崩」，
+所以 `mods.toml` 的依赖范围收紧为 `[1.21.11,1.21.12)` / `[21.11,21.12)`。事件清单必须用
+`python mod/tools/gen_events.py` 从 21.11.42 的 universal jar 重新抽取（当前 267 个事件类）。
 
 早期推荐的 ModDevGradle 2.x / NeoGradle 7.x 方案**未采用**：工程规模小，直接用服务端
 `libraries` 里的官方映射 jar 编译更省事。若将来引入 Mixin 或多模块再评估。
@@ -264,9 +272,9 @@ powershell -ExecutionPolicy Bypass -File mod/build.ps1            # 全量
 powershell -ExecutionPolicy Bypass -File mod/build.ps1 -SkipRust   # 只改 Java
 ```
 
-四步：`cargo build --release` → `javac`（classpath 取 `server/libraries` 下除
+四步：`cargo build --release` → `javac`（classpath 取 `server-1.21.11/libraries` 下除
 `-slim` / `-unpacked` 外的 jar，这两类带 SRG 名会编译失败）→ 复制 `neoforge.mods.toml`
-与 `nebula_jni.dll` 到 `build/classes/META-INF/` → `jar --create` 并部署到 `server/mods/`。
+与 `nebula_jni.dll` 到 `build/classes/META-INF/` → `jar --create` 并部署到 `server-1.21.11/mods/`。
 `-RustTargetDir` 可指定 Rust 产物目录。`-SkipRust` 要求 `target/release/nebula_jni.dll` 已存在。
 脚本最后会打开 jar 比对内嵌 dll 与 release dll 的 SHA256——`Deployed` 只证明复制成功，不证明内容新。
 构建时还会把 `bridge/src/**/*.rs`、`Cargo.toml`、`src/main/java/**/*.java` 的逐文件 SHA256
@@ -295,7 +303,7 @@ debug 靠命令开关、事件集写死在 `NebulaMod` 构造函数里。`config
 `python mod/selftest/regress.py`（`--keep` 保留现场）：准备隔离服（端口 25566 /
 RCON 25576，目录联接共享 `libraries` / `.jdk`，独立 `level-name`）→ 启动两个 mineflayer
 假玩家 → 跑 `selftest/wordlib` → 按 `selftest/checks.json` 用原版 `execute if …` /
-`data get entity …` 批量反查 → 恢复 tick、RCON `stop`、清理。实测 **18/18 PASS、0 告警**。
+`data get entity …` 批量反查 → 恢复 tick、RCON `stop`、清理。实测 **19/19 PASS、0 告警**。
 
 启服前先做**产物校验**：jar 内嵌 dll 与 `bridge/target/release/nebula_jni.dll` 的 SHA256 一致，
 并逐文件比对 `META-INF/nebula-build.json` 记录的源码内容指纹与工作区现状；
@@ -308,13 +316,13 @@ RCON 25576，目录联接共享 `libraries` / `.jdk`，独立 `level-name`）→
 信任链到此为止——再往上需要代码签名或可信构建，超出本地项目的范围。
 只想秒级检查用 `python mod/selftest/regress.py --verify-only`；`--skip-verify` 不推荐。
 升级 Minecraft / NeoForge 版本前先跑它，断言写在 `checks.json`。清理时先摘目录联接再删目录，
-**绝不碰 `server/world`**。线上服未开 RCON、stdin 不可注入，不要用 `taskkill` 代替 `stop`。
+**绝不碰 `server-1.21.11/world`**。线上服未开 RCON、stdin 不可注入，不要用 `taskkill` 代替 `stop`。
 
 ## 9. 决策台账
 
 ### 已定
 
-1. **版本**：Minecraft 1.21.1 / NeoForge 21.1.265 / Java 21。
+1. **版本**：Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21。
 2. **构建**：`build.ps1` + `javac`，不引入 Gradle。
 3. **词库根**：`<gameDir>/nebula`（固定，不可配置）。
 4. **运行模式**：只支持专用服务端。
@@ -337,13 +345,13 @@ RCON 25576，目录联接共享 `libraries` / `.jdk`，独立 `level-name`）→
 
 | 项 | 状态 | 证据 |
 | --- | --- | --- |
-| 目录与基岩版对应、词库结构一致 | ✅ | `server/nebula/` 与 `bridge/README.md` |
+| 目录与基岩版对应、词库结构一致 | ✅ | `server-1.21.11/nebula/` 与 `bridge/README.md` |
 | 生命周期覆盖启动 / tick / 停止 / 命令，构造期不碰世界 | ✅ | `NebulaMod#onServerStarted` / `onServerStopping` |
 | 热重载失败回退、旧任务 epoch | ✅ | `op_reload` 先编译后替换；`bridge/src/lib.rs` 单测 |
-| 每个 `世界` 方法都能对应到实现或明确降级 | ✅ | 127 个方法全量落地，唯一占位 `打开背包`；见 `mc-api-map.md` |
+| 每个 `世界` 方法都能对应到实现或明确降级 | ✅ | 128 个方法全量落地，唯一占位 `打开背包`；见 `mc-api-map.md` |
 | 主线程同步、无跨线程 `世界` 调用 | ✅ | 动作走 `executeActions`，无 JNI tick |
 | 客户端/服务端边界明确 | ✅ | `side = "SERVER"`，客户端无需装 mod |
-| 构建产物布局可执行 | ✅ | `build.ps1` 构建部署成功；jar 已在 `server/mods/` |
-| 真机验证 | ✅ | 1.21.1 / 21.1.265：查询、动作、双假玩家、12 项原版反查全通；见 `mc-api-map.md` 第 0 节 |
-| Rust 单测 | ✅ | `cargo test --offline --lib` 6/6 通过（含文档 ↔ 代码双向断言） |
-| 一键回归 | ✅ | `regress.py` 18/18 PASS、0 告警 |
+| 构建产物布局可执行 | ✅ | `build.ps1` 构建部署成功；jar 已在 `server-1.21.11/mods/` |
+| 真机验证 | ✅ | 1.21.11 / 21.11.42：查询、动作、双假玩家、悬浮字 / 治疗 / 通用事件桥动态注册，19/19 PASS、0 告警；见 `mc-api-map.md` 第 0 节 |
+| Rust 单测 | ✅ | `cargo test --offline --lib` 7/7 通过（含文档 ↔ 代码双向断言、随服词库编译） |
+| 一键回归 | ✅ | `regress.py` 19/19 PASS、0 告警 |

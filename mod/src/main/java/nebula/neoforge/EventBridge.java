@@ -24,7 +24,7 @@ import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * 通用 NeoForge 事件桥：把整个事件总线按「订阅」暴露给词库。
  *
  * <p>jar 内的 {@code nebula/events.json} 是构建期从 NeoForge universal jar 抽取的事件
- * 类清单（当前 262 条）。宿主不会把它们全部挂上去——只有词库里真的写了
+ * 类清单（当前 267 条，来自 NeoForge 21.11.42）。宿主不会把它们全部挂上去——只有词库里真的写了
  * {@code [事件]EntityJoinLevelEvent} 这类词条时，才用
  * {@code IEventBus.addListener(Class, Consumer)} 动态注册对应的监听器。
  * 这样「能力全覆盖」和「成本按订阅付」可以同时成立：没有插件订阅高频 tick 事件时，
@@ -272,7 +272,7 @@ public final class EventBridge {
             p.addProperty(key, e.name());
         } else if (v instanceof UUID u) {
             p.addProperty(key, u.toString());
-        } else if (v instanceof ResourceLocation rl) {
+        } else if (v instanceof Identifier rl) {
             p.addProperty(key, rl.toString());
         } else if (v instanceof BlockPos pos) {
             JsonObject j = new JsonObject();
@@ -316,9 +316,9 @@ public final class EventBridge {
         JsonObject j = new JsonObject();
         j.addProperty("name", e.getName().getString());
         j.addProperty("id", e.getId());
-        ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+        Identifier type = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         j.addProperty("type", type == null ? "" : type.toString());
-        j.addProperty("dimension", e.level().dimension().location().toString());
+        j.addProperty("dimension", e.level().dimension().identifier().toString());
         j.addProperty("x", e.getX());
         j.addProperty("y", e.getY());
         j.addProperty("z", e.getZ());

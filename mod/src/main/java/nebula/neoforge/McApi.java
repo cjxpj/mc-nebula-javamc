@@ -16,17 +16,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraft.server.players.NameAndId;
 
 /**
  * Rust 词库 {@code 世界} 查询回调。
@@ -136,7 +138,7 @@ public final class McApi {
         BlockState state = level.getBlockState(pos);
         String name = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
         String data = state.toString();
-        String dimension = level.dimension().location().toString();
+        String dimension = level.dimension().identifier().toString();
         return switch (kind) {
             case 0 -> name;
             case 1 -> data;
@@ -201,7 +203,7 @@ public final class McApi {
             return "{}";
         }
         JsonObject json = new JsonObject();
-        json.addProperty("维度", player.level().dimension().location().toString());
+        json.addProperty("维度", player.level().dimension().identifier().toString());
         json.addProperty("x", player.getX());
         json.addProperty("y", player.getY());
         json.addProperty("z", player.getZ());
@@ -227,7 +229,7 @@ public final class McApi {
             return "{}";
         }
         JsonObject json = new JsonObject();
-        json.addProperty("维度", level == null ? "" : level.dimension().location().toString());
+        json.addProperty("维度", level == null ? "" : level.dimension().identifier().toString());
         json.addProperty("x", blockPos.getX());
         json.addProperty("y", blockPos.getY());
         json.addProperty("z", blockPos.getZ());
@@ -244,7 +246,7 @@ public final class McApi {
         JsonObject json = new JsonObject();
         json.addProperty("名称", player.getName().getString());
         json.addProperty("uuid", player.getUUID().toString());
-        json.addProperty("维度", player.level().dimension().location().toString());
+        json.addProperty("维度", player.level().dimension().identifier().toString());
         json.addProperty("x", player.getX());
         json.addProperty("y", player.getY());
         json.addProperty("z", player.getZ());
@@ -291,7 +293,7 @@ public final class McApi {
         if (player == null) {
             return "0";
         }
-        return server.getPlayerList().isOp(player.getGameProfile()) ? "4" : "0";
+        return server.getPlayerList().isOp(new NameAndId(player.getGameProfile())) ? "4" : "0";
     }
 
     private static String heldItem(MinecraftServer server, JsonObject request) {
@@ -305,7 +307,7 @@ public final class McApi {
             return "{}";
         }
         int slot = McSupport.integer(request, "槽位", 0);
-        if (slot < 0 || slot >= player.getInventory().items.size()) {
+        if (slot < 0 || slot >= player.getInventory().getNonEquipmentItems().size()) {
             return "{}";
         }
         return McSupport.itemJson(player.getInventory().getItem(slot)).toString();
@@ -313,10 +315,10 @@ public final class McApi {
 
     private static String offhandItem(MinecraftServer server, JsonObject request) {
         ServerPlayer player = McSupport.player(server, McSupport.str(request, "玩家"));
-        if (player == null || player.getInventory().offhand.isEmpty()) {
+        if (player == null || player.getInventory().getItem(Inventory.SLOT_OFFHAND).isEmpty()) {
             return "{}";
         }
-        return McSupport.itemJson(player.getInventory().offhand.get(0)).toString();
+        return McSupport.itemJson(player.getInventory().getItem(Inventory.SLOT_OFFHAND)).toString();
     }
 
     private static String armor(MinecraftServer server, JsonObject request) {
@@ -325,8 +327,8 @@ public final class McApi {
             return "[]";
         }
         JsonArray out = new JsonArray();
-        for (ItemStack stack : player.getInventory().armor) {
-            out.add(McSupport.itemJson(stack));
+        for (int slot = Inventory.SLOT_OFFHAND - 4; slot < Inventory.SLOT_OFFHAND; slot++) {
+            out.add(McSupport.itemJson(player.getInventory().getItem(slot)));
         }
         return out.toString();
     }
@@ -347,9 +349,7 @@ public final class McApi {
             return "0";
         }
         int total = 0;
-        total += count(player.getInventory().items, item);
-        total += count(player.getInventory().armor, item);
-        total += count(player.getInventory().offhand, item);
+        total += count(McSupport.inventorySlots(player.getInventory()), item);
         return String.valueOf(total);
     }
 
@@ -505,7 +505,7 @@ public final class McApi {
             return "{}";
         }
         JsonObject json = new JsonObject();
-        json.addProperty("维度", entity.level().dimension().location().toString());
+        json.addProperty("维度", entity.level().dimension().identifier().toString());
         json.addProperty("x", entity.getX());
         json.addProperty("y", entity.getY());
         json.addProperty("z", entity.getZ());
@@ -559,7 +559,7 @@ public final class McApi {
         int y = McSupport.integer(request, "y", 64);
         int z = McSupport.integer(request, "z", 0);
         int budget = Math.max(McSupport.integer(request, "预算", 64), 0);
-        String dim = level.dimension().location().toString();
+        String dim = level.dimension().identifier().toString();
 
         JsonArray out = new JsonArray();
         int reads = 0;

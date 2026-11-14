@@ -20,35 +20,18 @@ mod/build/
 *.a
 *.o
 
-# ── NeoForge 专用服：安装器下载的依赖、JDK、世界、日志 ──
-server/libraries/
-server/.jdk/
-server/.downloads/
-server/mods/
-server/world/
-server/world_nether/
-server/world_the_end/
-server/logs/
-server/crash-reports/
-server/config/
-server/usercache.json
-server/usernamecache.json
-server/banned-ips.json
-server/banned-players.json
-server/ops.json
-server/whitelist.json
-server/eula.txt
-server/neoforge-*-installer.jar.log
+# ── 旧 1.21.1 服 server/ 已整体删除；留一条兜底，防止按旧教程重建时误提交运行期数据 ──
+server/*
+!server/README.md
 
-# ── 文档站点由 jar 在开服时铺到 _docs，源头在 mod/docs ──
-server/nebula/_docs/
-
-# ── 插件运行期数据：账号.json 含密码哈希，配置.json 含盐，会话.json 含在线状态 ──
-server/nebula/*/data/
-server/nebula/登录/data/
+# ── 1.21.11 版本隔离目录：installer 生成的运行期数据，只留一份重建说明 ──
+server-1.21.11/*
+!server-1.21.11/README.md
 
 # ── 隔离回归测试服（另一套 libraries/.jdk/world 与 node_modules）──
+# 按 server 目录名派生，例如 server-1.21.11 -> .testserver-1.21.11
 .testserver/
+.testserver-*/
 .testserver.stale-*/
 
 # ── 依赖 / 缓存 / 本地记录 ──

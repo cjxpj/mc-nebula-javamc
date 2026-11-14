@@ -1,8 +1,14 @@
 {
-  "neoforge": "21.1.265",
-  "generatedFrom": "neoforge-21.1.265-universal.jar",
-  "count": 262,
+  "neoforge": "21.11.42",
+  "generatedFrom": "neoforge-21.11.42-universal.jar",
+  "count": 267,
   "events": [
+    {
+      "name": "AddAttributeTooltipsEvent",
+      "class": "net.neoforged.neoforge.event.AddAttributeTooltipsEvent",
+      "throttle": 0,
+      "hint": ""
+    },
     {
       "name": "AddPackFindersEvent",
       "class": "net.neoforged.neoforge.event.AddPackFindersEvent",
@@ -10,14 +16,8 @@
       "hint": "load-time"
     },
     {
-      "name": "AddReloadListenerEvent",
-      "class": "net.neoforged.neoforge.event.AddReloadListenerEvent",
-      "throttle": 0,
-      "hint": "load-time"
-    },
-    {
-      "name": "AddReloadListenerEvent.WrappedStateAwareListener",
-      "class": "net.neoforged.neoforge.event.AddReloadListenerEvent$WrappedStateAwareListener",
+      "name": "AddServerReloadListenersEvent",
+      "class": "net.neoforged.neoforge.event.AddServerReloadListenersEvent",
       "throttle": 0,
       "hint": "load-time"
     },
@@ -64,14 +64,32 @@
       "hint": ""
     },
     {
-      "name": "AnvilRepairEvent",
-      "class": "net.neoforged.neoforge.event.entity.player.AnvilRepairEvent",
+      "name": "AnvilCraftEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.AnvilCraftEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnvilCraftEvent.Post",
+      "class": "net.neoforged.neoforge.event.entity.player.AnvilCraftEvent$Post",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnvilCraftEvent.Pre",
+      "class": "net.neoforged.neoforge.event.entity.player.AnvilCraftEvent$Pre",
       "throttle": 0,
       "hint": ""
     },
     {
       "name": "AnvilUpdateEvent",
       "class": "net.neoforged.neoforge.event.AnvilUpdateEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "AnvilUpdateEvent.VanillaResult",
+      "class": "net.neoforged.neoforge.event.AnvilUpdateEvent$VanillaResult",
       "throttle": 0,
       "hint": ""
     },
@@ -334,18 +352,6 @@
       "hint": ""
     },
     {
-      "name": "EnchantedBlockLootEvent",
-      "class": "net.neoforged.neoforge.event.enchanting.EnchantedBlockLootEvent",
-      "throttle": 0,
-      "hint": ""
-    },
-    {
-      "name": "EnchantedEntityLootEvent",
-      "class": "net.neoforged.neoforge.event.enchanting.EnchantedEntityLootEvent",
-      "throttle": 0,
-      "hint": ""
-    },
-    {
       "name": "EnchantmentLevelSetEvent",
       "class": "net.neoforged.neoforge.event.enchanting.EnchantmentLevelSetEvent",
       "throttle": 0,
@@ -436,12 +442,6 @@
       "hint": ""
     },
     {
-      "name": "EntityTeleportEvent.ChorusFruit",
-      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$ChorusFruit",
-      "throttle": 0,
-      "hint": ""
-    },
-    {
       "name": "EntityTeleportEvent.EnderEntity",
       "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$EnderEntity",
       "throttle": 0,
@@ -450,6 +450,12 @@
     {
       "name": "EntityTeleportEvent.EnderPearl",
       "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$EnderPearl",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "EntityTeleportEvent.ItemConsumption",
+      "class": "net.neoforged.neoforge.event.entity.EntityTeleportEvent$ItemConsumption",
       "throttle": 0,
       "hint": ""
     },
@@ -520,8 +526,20 @@
       "hint": ""
     },
     {
+      "name": "FluidTooltipEvent",
+      "class": "net.neoforged.neoforge.event.entity.player.FluidTooltipEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
       "name": "FurnaceFuelBurnTimeEvent",
       "class": "net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent",
+      "throttle": 0,
+      "hint": ""
+    },
+    {
+      "name": "GameRuleChangedEvent",
+      "class": "net.neoforged.neoforge.event.level.GameRuleChangedEvent",
       "throttle": 0,
       "hint": ""
     },
@@ -532,14 +550,14 @@
       "hint": "load-time"
     },
     {
-      "name": "GetEnchantmentLevelEvent",
-      "class": "net.neoforged.neoforge.event.enchanting.GetEnchantmentLevelEvent",
+      "name": "GatherSkippedAttributeTooltipsEvent",
+      "class": "net.neoforged.neoforge.event.GatherSkippedAttributeTooltipsEvent",
       "throttle": 0,
       "hint": ""
     },
     {
-      "name": "GetEquipmentDropChanceEvent",
-      "class": "net.neoforged.neoforge.event.entity.living.GetEquipmentDropChanceEvent",
+      "name": "GetEnchantmentLevelEvent",
+      "class": "net.neoforged.neoforge.event.enchanting.GetEnchantmentLevelEvent",
       "throttle": 0,
       "hint": ""
     },
@@ -1234,12 +1252,6 @@
       "hint": ""
     },
     {
-      "name": "PlayerHeartTypeEvent",
-      "class": "net.neoforged.neoforge.event.entity.player.PlayerHeartTypeEvent",
-      "throttle": 0,
-      "hint": ""
-    },
-    {
       "name": "PlayerInteractEvent",
       "class": "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent",
       "throttle": 0,
@@ -1408,6 +1420,12 @@
       "hint": "load-time"
     },
     {
+      "name": "RegisterGameRuleCategoryEvent",
+      "class": "net.neoforged.neoforge.event.RegisterGameRuleCategoryEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
       "name": "RegisterGameTestsEvent",
       "class": "net.neoforged.neoforge.event.RegisterGameTestsEvent",
       "throttle": 0,
@@ -1502,6 +1520,18 @@
       "class": "net.neoforged.neoforge.event.level.SleepFinishedTimeEvent",
       "throttle": 0,
       "hint": ""
+    },
+    {
+      "name": "SortedReloadListenerEvent",
+      "class": "net.neoforged.neoforge.event.SortedReloadListenerEvent",
+      "throttle": 0,
+      "hint": "load-time"
+    },
+    {
+      "name": "SortedReloadListenerEvent.NameLookup",
+      "class": "net.neoforged.neoforge.event.SortedReloadListenerEvent$NameLookup",
+      "throttle": 0,
+      "hint": "load-time"
     },
     {
       "name": "SpawnClusterSizeEvent",

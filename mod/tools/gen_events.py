@@ -9,6 +9,10 @@ can cover the whole event bus without paying for 150+ permanent listeners.
 Usage:
     python mod/tools/gen_events.py
     python mod/tools/gen_events.py --check
+    python mod/tools/gen_events.py --server-dir ../server-1.21.11
+
+The catalog must come from the SAME NeoForge version as the target server;
+a catalog generated from 1.21.1 is useless on 1.21.11.
 
 --check exits non-zero when the checked-in catalog is stale. CI / regress.py
 can call it to catch a NeoForge upgrade that was not followed by a rebuild.
@@ -24,7 +28,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-LIBRARIES = ROOT / "server" / "libraries" / "net" / "neoforged" / "neoforge"
+DEFAULT_SERVER = ROOT / "server-1.21.11"
 OUTPUT = ROOT / "mod" / "src" / "main" / "resources" / "nebula" / "events.json"
 
 EVENT_PREFIX = "net/neoforged/neoforge/event/"
@@ -35,7 +39,9 @@ INNER_SEP = "$"
 # when a word library subscribes to one of them on a dedicated server.
 LOAD_TIME_HINTS = (
     "AddPackFindersEvent",
-    "AddReloadListenerEvent",
+    "AddServerReloadListenersEvent",
+    "SortedReloadListenerEvent",
+    "RegisterGameRuleCategoryEvent",
     "BuildCreativeModeTabContentsEvent",
     "BlockEntityTypeAddBlocksEvent",
     "EntityAttributeCreationEvent",
@@ -64,10 +70,11 @@ HIGH_FREQUENCY = (
 )
 
 
-def find_universal_jar() -> Path:
-    candidates = sorted(LIBRARIES.glob("*/*-universal.jar"))
+def find_universal_jar(server: Path) -> Path:
+    libraries = server / "libraries" / "net" / "neoforged" / "neoforge"
+    candidates = sorted(libraries.glob("*/*-universal.jar"))
     if not candidates:
-        raise SystemExit(f"no NeoForge universal jar under {LIBRARIES}")
+        raise SystemExit(f"no NeoForge universal jar under {libraries}")
     return candidates[-1]
 
 
@@ -118,9 +125,11 @@ def catalog_from(jar: Path) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="only verify the catalog is current")
+    ap.add_argument("--server-dir", default=str(DEFAULT_SERVER),
+                    help="server directory whose libraries/ holds the NeoForge universal jar")
     args = ap.parse_args()
 
-    jar = find_universal_jar()
+    jar = find_universal_jar(Path(args.server_dir).resolve())
     fresh = catalog_from(jar)
     text = json.dumps(fresh, ensure_ascii=False, indent=2) + "\n"
 

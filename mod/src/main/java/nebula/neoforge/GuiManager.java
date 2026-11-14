@@ -11,7 +11,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -238,7 +238,7 @@ public final class GuiManager {
             return;
         }
         JsonObject payload = NebulaMod.playerProfile(player);
-        payload.addProperty("玩家名", player.getGameProfile().getName());
+        payload.addProperty("玩家名", player.getGameProfile().name());
         payload.addProperty("界面", session.title);
         payload.addProperty("槽位", slot);
         payload.addProperty("按钮", button);

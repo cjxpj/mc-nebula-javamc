@@ -39,18 +39,18 @@
 | `javamc/bridge/README.md` 的 Bukkit 事件/API 映射 | **下沉**为 Paper 分支资料 | `javamc/paper/plugin/API-MAP.md` |
 | 原 Paper 插件元信息 `plugin.yml` | **下沉** | `javamc/paper/plugin/plugin.yml` |
 | `javamc/bridge/`（JNI 契约思路） | **保留并升级**为平台无关的共用桥接层 | `javamc/bridge/README.md` |
-| 原共享示例词库 | **保留共用**，随 NeoForge 专用服存放 | `javamc/server/nebula/示例/` |
+| 原共享示例词库 | **保留共用**，随 NeoForge 专用服存放 | `javamc/server-1.21.11/nebula/示例/` |
 | `javamc/README.md` 的 Paper 架构 | **替换**为 NeoForge 主方案说明 | `javamc/README.md` |
 
-`javamc/paper/` 曾标记为“备选分支 / 暂停实现”，不进入 NeoForge 评审范围；该目录及其中的 `README.md`、`plugin/API-MAP.md`、`plugin/plugin.yml`、`server/README.md` 现已删除。NeoForge 侧的 `世界` 映射以 [`mc-api-map.md`](mc-api-map.md) 为准。
+`javamc/paper/` 曾标记为“备选分支 / 暂停实现”，不进入 NeoForge 评审范围；该目录及其中的 `README.md`、`plugin/API-MAP.md`、`plugin/plugin.yml`、`server-1.21.11/README.md` 现已删除。NeoForge 侧的 `世界` 映射以 [`mc-api-map.md`](mc-api-map.md) 为准。
 
 ## 5. 落地状态（2026-11-09 校准）
 
 本文是归档记录，下面几条说明「当时的判断后来变成什么样」，实现细节以
 [`neoforge.md`](neoforge.md) 为准。
 
-- 主方案已在 Minecraft 1.21.1 / NeoForge 21.1.265 上跑通：`bridge/` 保持平台无关，
-  `mod` 落地 127 个 `世界` 方法，1.21.1 真机自检与一键回归 18/18 PASS。
+- 主方案已在 Minecraft 1.21.11 / NeoForge 21.11.42 上跑通：`bridge/` 保持平台无关，
+  `mod` 落地 128 个 `世界` 方法，1.21.11 真机自检与一键回归 19/19 PASS。
 - 第 2 节对比表里「部分事件需要 Mixin（如物品栏点击）」的顾虑已消解：点击由 `GuiManager`
   的自定义 `ChestMenu#clicked` 拦截，**不需要字节码增强**；只有客户端本地的 `打开背包`
   仍是占位。

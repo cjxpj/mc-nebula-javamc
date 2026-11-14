@@ -7,7 +7,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
+import java.util.AbstractList;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -19,12 +21,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -54,7 +57,7 @@ final class McSupport {
         if (server == null || dimension == null || dimension.isBlank()) {
             return null;
         }
-        ResourceLocation id = ResourceLocation.tryParse(dimension.trim());
+        Identifier id = Identifier.tryParse(dimension.trim());
         if (id == null) {
             return null;
         }
@@ -83,12 +86,13 @@ final class McSupport {
     }
 
     static Item item(String id) {
-        ResourceLocation key = ResourceLocation.tryParse(id == null ? "" : id.trim());
+        Identifier key = Identifier.tryParse(id == null ? "" : id.trim());
         if (key == null) {
             return Items.AIR;
         }
-        Item item = BuiltInRegistries.ITEM.get(key);
-        return item == null ? Items.AIR : item;
+        // 1.21.11 起 Registry#get(Identifier) 返回 Optional<Holder.Reference<T>>，
+        // 取实际注册对象用 getOptional。
+        return BuiltInRegistries.ITEM.getOptional(key).orElse(Items.AIR);
     }
 
     /** 按实体 id / UUID / 名字找实体；找不到返回 null。 */
@@ -133,7 +137,13 @@ final class McSupport {
                 if (uuid != null && uuid.equals(entity.getUUID())) {
                     return entity;
                 }
-                if (entity.getName().getString().equals(raw.trim())) {
+                String shown = entity.getName().getString();
+                String wanted = raw.trim();
+                // 1.21.11 的 /summon 会把 CustomName:'"TestCow"' 解析成带引号的文本，
+                // 名字匹配同时接受剥掉一层引号的形式（1.21.1 的裸名字不受影响）。
+                if (shown.equals(wanted)
+                        || (shown.length() >= 2 && shown.startsWith("\"") && shown.endsWith("\"")
+                        && shown.substring(1, shown.length() - 1).equals(wanted))) {
                     return entity;
                 }
             }
@@ -174,9 +184,9 @@ final class McSupport {
         json.addProperty("id", entity.getId());
         json.addProperty("uuid", entity.getUUID().toString());
         json.addProperty("名称", entity.getName().getString());
-        ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        Identifier type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         json.addProperty("类型", type == null ? "" : type.toString());
-        json.addProperty("维度", entity.level().dimension().location().toString());
+        json.addProperty("维度", entity.level().dimension().identifier().toString());
         json.addProperty("x", entity.getX());
         json.addProperty("y", entity.getY());
         json.addProperty("z", entity.getZ());
@@ -462,5 +472,22 @@ final class McSupport {
             return out.toString();
         }
         return text(value);
+    }
+
+    /**
+     * 1.21.11 起 Inventory 的 items / armor / offhand 三个 NonNullList 全部变为私有。
+     * 这里按槽位号统一暴露可写视图：0-35 主背包、36-39 护甲、40 副手、41+ 新增装备槽。
+     * set() 落到 Inventory#setItem，所以扣物品 / 清空背包会自动覆盖 1.21.11 的新槽位。
+     */
+    public static List<ItemStack> inventorySlots(Inventory inventory) {
+        return new AbstractList<>() {
+            @Override public ItemStack get(int index) { return inventory.getItem(index); }
+            @Override public ItemStack set(int index, ItemStack value) {
+                ItemStack old = inventory.getItem(index);
+                inventory.setItem(index, value);
+                return old;
+            }
+            @Override public int size() { return inventory.getContainerSize(); }
+        };
     }
 }

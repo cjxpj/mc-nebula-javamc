@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | [`plugin-guide.md`](plugin-guide.md) | 怎么开发一个 `.n` 插件：目录、语法、钩子、事件、指令、配置、界面、完整示例、排错 | 第一次写插件，或写的时候卡住 |
 | [`neoforge.md`](neoforge.md) | 设计决策 + 实现现状：边界、架构、生命周期、事件桥、线程、构建、决策台账 | 想理解整条链路，或不确定某条设计落地没有、要改 mod |
-| [`mc-api-map.md`](mc-api-map.md) | `世界` 127 个方法的逐项映射、参数规约、降级清单、1.21.1 真机实测结论 | 查 `$世界.…$` 的参数与返回值，或新增 / 删除方法 |
+| [`mc-api-map.md`](mc-api-map.md) | `世界` 128 个方法的逐项映射、参数规约、降级清单、1.21.11 真机实测结论 | 查 `$世界.…$` 的参数与返回值，或新增 / 删除方法 |
 | [`platform-choice.md`](platform-choice.md) | NeoForge 与 Paper / Spigot 的历史取舍（归档） | 重新评估宿主选型时 |
 
 ### API 参考（`apis/`，按 LLSE 体例）
@@ -28,7 +28,7 @@
 - [`apis/事件.md`](apis/事件.md)：6 个内置事件 + 通用事件桥的 payload 字段、取消与避坑。
 - 分类手册：[方块](apis/方块.md) · [坐标](apis/坐标.md) · [玩家](apis/玩家.md) ·
   [世界与服务器](apis/世界与服务器.md) · [实体](apis/实体.md) ·
-  [交互与事件](apis/交互与事件.md) · [指令与界面](apis/指令与界面.md)（共 **127 条**）。
+  [交互与事件](apis/交互与事件.md) · [指令与界面](apis/指令与界面.md)（共 **128 条**）。
 
 分类手册按 `mc-api-map.md`（契约表）与 `bridge/src/lib.rs`（规格表）手工维护，增删方法时
 三处一起改，最后跑 `cargo test --offline --lib` 让单测兜住不一致。
@@ -54,10 +54,10 @@
 
 | 插件 | 演示什么 |
 | --- | --- |
-| `示例` | 最小结构、生命周期、聊天事件（`server/nebula/示例/main.n`） |
-| `伤害显示` | 事件 payload、`%对象.字段%`、条件分支、配置开关（[`说明.md`](../../server/nebula/伤害显示/说明.md)） |
+| `示例` | 最小结构、生命周期、聊天事件（`server-1.21.11/nebula/示例/main.n`） |
+| `伤害显示` | 事件 payload、`%对象.字段%`、条件分支、配置开关（[`说明.md`](../../server-1.21.11/nebula/伤害显示/说明.md)） |
 | `连锁砍树` | 多文件拆分、`[函数]` 显式传参、遍历与数值运算 |
-| `泥土商店` | 自注册指令、`%库目录%` 读 JSON、界面对象 + 点击闭包（[`说明.md`](../../server/nebula/泥土商店/说明.md)） |
+| `泥土商店` | 自注册指令、`%库目录%` 读 JSON、界面对象 + 点击闭包（[`说明.md`](../../server-1.21.11/nebula/泥土商店/说明.md)） |
 | `selftest/wordlib` | `[f]重载` 读回、批量动作 |
 
 ## 事实来源优先级
@@ -66,9 +66,9 @@
 
 - `bridge/src/lib.rs`：规格表、生命周期钩子、JNI 契约。
 - `mod/src/main/java/nebula/neoforge/`：宿主实现（事件 payload 与方法分支）。
-- `server/nebula/*/main.n`：真实可跑的词库写法，指南里的示例都从这些文件核对过。
+- `server-1.21.11/nebula/*/main.n`：真实可跑的词库写法，指南里的示例都从这些文件核对过。
 - `cargo test --offline --lib`：文档 ↔ 函数、规格表 ↔ 宿主、参数位次三层一致性。
-- `python mod/selftest/regress.py`：1.21.1 真机一键回归（18/18 PASS）；启服前按 jar 内 `META-INF/nebula-build.json` 的源码内容指纹校验（不看 mtime），与 `target/release/nebula_jni.manifest.json` 交叉校验，并读取 dll 内 `build.rs` 烧入的 `NEBULA_SOURCES=` 编译期指纹作为终点证据，`--verify-only` 可秒级检查。用旧 jar 跑出的 PASS 不算数。
+- `python mod/selftest/regress.py`：1.21.11 真机一键回归（19/19 PASS）；启服前按 jar 内 `META-INF/nebula-build.json` 的源码内容指纹校验（不看 mtime），与 `target/release/nebula_jni.manifest.json` 交叉校验，并读取 dll 内 `build.rs` 烧入的 `NEBULA_SOURCES=` 编译期指纹作为终点证据，`--verify-only` 可秒级检查。用旧 jar 跑出的 PASS 不算数。
 
 ## 维护约定
 

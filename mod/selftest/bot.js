@@ -9,7 +9,7 @@ const bot = mineflayer.createBot({
   host: '127.0.0.1',
   port: 25566,
   username: name,
-  version: '1.21.1',
+  version: process.env.NEBULA_MC_VERSION || '1.21.11',
   auth: 'offline',
 });
 

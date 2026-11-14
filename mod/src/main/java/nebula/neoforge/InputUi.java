@@ -105,7 +105,7 @@ public final class InputUi {
             }
             done = true;
             JsonObject payload = NebulaMod.playerProfile(player);
-            payload.addProperty("玩家名", player.getGameProfile().getName());
+            payload.addProperty("玩家名", player.getGameProfile().name());
             payload.addProperty("文本", text == null ? "" : text.trim());
             payload.addProperty("动作", "确认");
             player.closeContainer();

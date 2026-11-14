@@ -369,6 +369,8 @@ fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
         q!("实体有标签", "否", f!("实体", 1, Str), f!("标签", 2, Str)),
         q!("取实体属性", "", f!("实体", 1, Str), f!("属性", 2, Str)),
         a!("实体隐身", f!("实体", 1, Str), f!("值", 2, Bool)),
+        // 6.1b 原版 dialog（1.21.6+）：文本输入框 + dynamic/run_command 模板
+        a!("弹窗输入", f!("玩家", 1, Player), f!("标题", 2, Str), f!("提示", 3, Str), f!("标签", 4, Str), f!("最长", 5, Int), f!("提交指令", 6, Str)),
         // 6.2 显示特效
         a!("悬浮字", f!("维度", 1, Str), f!("x", 2, Float), f!("y", 3, Float), f!("z", 4, Float), f!("文本", 5, Str), f!("缩放", 6, Float), f!("上升", 7, Float), f!("时长", 8, Int)),
     ];
@@ -2194,7 +2196,11 @@ mod tests {
     /// 不必等进游戏 `/nebula load` 才发现。
     #[test]
     fn shipped_wordlibs_compile() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/nebula");
+        let javamc = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+        let root = javamc.join("server-1.21.11").join("nebula");
+        if !root.is_dir() {
+            panic!("找不到随服词库目录：{}", root.display());
+        }
         let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
             .unwrap_or_else(|e| panic!("读不到词库目录 {}：{e}", root.display()))
             .filter_map(|entry| entry.ok().map(|e| e.path()))

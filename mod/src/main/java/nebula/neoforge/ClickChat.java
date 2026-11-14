@@ -49,10 +49,10 @@ public final class ClickChat {
             MutableComponent part = Component.literal(text);
             if (!command.isEmpty()) {
                 part.withStyle(style -> style.withClickEvent(
-                        new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
+                        new ClickEvent.RunCommand(command)));
                 if (!hover.isEmpty()) {
                     part.withStyle(style -> style.withHoverEvent(
-                            new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
+                            new HoverEvent.ShowText(Component.literal(hover))));
                 }
             }
             line.append(part);

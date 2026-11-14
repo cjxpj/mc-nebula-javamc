@@ -21,7 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -52,6 +52,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.server.permissions.Permissions;
+import net.minecraft.server.permissions.PermissionCheck;
 
 /**
  * 星云词库引擎的 NeoForge 服务端桥接入口。
@@ -190,9 +193,9 @@ public final class NebulaMod {
         }
         JsonObject payload = new JsonObject();
         payload.addProperty("玩家", playerProfile(player).toString());
-        payload.addProperty("玩家名", player.getGameProfile().getName());
-        payload.addProperty("管理员", server.getPlayerList().isOp(player.getGameProfile()) ? "是" : "否");
-        payload.addProperty("维度", player.level().dimension().location().toString());
+        payload.addProperty("玩家名", player.getGameProfile().name());
+        payload.addProperty("管理员", server.getPlayerList().isOp(new NameAndId(player.getGameProfile())) ? "是" : "否");
+        payload.addProperty("维度", player.level().dimension().identifier().toString());
         JsonObject result = parse(NativeBridge.dispatch(handle, "玩家进入", payload.toString()));
         broadcastOutputs(server, result);
         executeActions(result, server);
@@ -222,7 +225,7 @@ public final class NebulaMod {
         payload.addProperty("玩家", profile.toString());
         payload.addProperty("玩家名", player.getName().getString());
         payload.addProperty("消息", event.getRawText());
-        payload.addProperty("管理员", server.getPlayerList().isOp(player.getGameProfile()) ? "是" : "否");
+        payload.addProperty("管理员", server.getPlayerList().isOp(new NameAndId(player.getGameProfile())) ? "是" : "否");
         payload.addProperty("潜行", String.valueOf(player.isShiftKeyDown()));
         payload.addProperty("维度", profile.get("维度").getAsString());
         payload.addProperty("x", profile.get("x").getAsString());
@@ -274,7 +277,7 @@ public final class NebulaMod {
         payload.addProperty("暴击", isCritical(attacker) ? "是" : "否");
         payload.addProperty("原因", event.getSource().getMsgId());
         payload.addProperty("致死", remaining <= 0.0F ? "是" : "否");
-        payload.addProperty("维度", victim.level().dimension().location().toString());
+        payload.addProperty("维度", victim.level().dimension().identifier().toString());
         payload.addProperty("x", victim.getX());
         payload.addProperty("y", victim.getY());
         payload.addProperty("z", victim.getZ());
@@ -334,7 +337,7 @@ public final class NebulaMod {
         payload.addProperty("身高", entity.getBbHeight());
         payload.addProperty("原因", healReason(entity));
         payload.addProperty("满血", Math.min(before + gain, max) >= max - 0.01F ? "是" : "否");
-        payload.addProperty("维度", entity.level().dimension().location().toString());
+        payload.addProperty("维度", entity.level().dimension().identifier().toString());
         payload.addProperty("x", entity.getX());
         payload.addProperty("y", entity.getY());
         payload.addProperty("z", entity.getZ());
@@ -366,9 +369,9 @@ public final class NebulaMod {
         JsonObject json = new JsonObject();
         json.addProperty("名称", entity.getName().getString());
         json.addProperty("id", entity.getId());
-        ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        Identifier type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         json.addProperty("类型", type == null ? "" : type.toString());
-        json.addProperty("维度", entity.level().dimension().location().toString());
+        json.addProperty("维度", entity.level().dimension().identifier().toString());
         json.addProperty("x", entity.getX());
         json.addProperty("y", entity.getY());
         json.addProperty("z", entity.getZ());
@@ -402,7 +405,7 @@ public final class NebulaMod {
         }
 
         BlockPos pos = event.getPos();
-        String dim = level.dimension().location().toString();
+        String dim = level.dimension().identifier().toString();
         ItemStack held = player.getMainHandItem();
         String heldName = held.isEmpty()
                 ? ""
@@ -432,7 +435,7 @@ public final class NebulaMod {
         JsonObject payload = new JsonObject();
         payload.addProperty("玩家", profile.toString());
         payload.addProperty("玩家名", player.getName().getString());
-        payload.addProperty("管理员", server.getPlayerList().isOp(player.getGameProfile()) ? "是" : "否");
+        payload.addProperty("管理员", server.getPlayerList().isOp(new NameAndId(player.getGameProfile())) ? "是" : "否");
         payload.addProperty("潜行", player.isShiftKeyDown() ? "是" : "否");
         payload.addProperty("模式", modeLabel(player));
         payload.addProperty("工具", heldName);
@@ -467,7 +470,7 @@ public final class NebulaMod {
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
                 Commands.literal("nebula")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(ctx -> reply(ctx,
                                 "用法：/nebula list|load|reload|unload|debug|undebug <插件名|--all>"))
                         .then(Commands.literal("list").executes(ctx -> invoke(ctx, "list", "")))
@@ -572,9 +575,20 @@ public final class NebulaMod {
         }
     }
 
+    /** 词库注册指令写的 0~4 权限等级 → 1.21.11 的 PermissionCheck 对象。 */
+    private static PermissionCheck permissionCheck(int level) {
+        return switch (level) {
+            case 4 -> Commands.LEVEL_OWNERS;
+            case 3 -> Commands.LEVEL_ADMINS;
+            case 2 -> Commands.LEVEL_GAMEMASTERS;
+            case 1 -> Commands.LEVEL_MODERATORS;
+            default -> Commands.LEVEL_ALL;
+        };
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> pluginCommand(String name, CommandOwner owner) {
         return Commands.literal(name)
-                .requires(source -> source.hasPermission(owner.permission()))
+                .requires(Commands.hasPermission(permissionCheck(owner.permission())))
                 .executes(ctx -> runPluginCommand(ctx, owner, ""))
                 .then(Commands.argument("参数", StringArgumentType.greedyString())
                         .executes(ctx -> runPluginCommand(ctx,
@@ -594,10 +608,10 @@ public final class NebulaMod {
             return 0;
         }
         JsonObject payload = playerProfile(player);
-        payload.addProperty("玩家名", player.getGameProfile().getName());
+        payload.addProperty("玩家名", player.getGameProfile().name());
         payload.addProperty("指令", owner.command());
         payload.addProperty("参数", args);
-        payload.addProperty("管理员", source.hasPermission(2) ? "是" : "否");
+        payload.addProperty("管理员", source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER) ? "是" : "否");
         // 按玩家实际输入的入口名匹配 [指令]商店|shop；payload 里的「指令」仍是规范名。
         String typed = ctx.getInput().split("\\s+", 2)[0];
         if (typed.startsWith("/")) {
@@ -782,6 +796,17 @@ public final class NebulaMod {
                                 action.has("界面ID") ? action.get("界面ID").getAsLong() : 0L);
                     }
                 }
+                case "弹窗输入" -> {
+                    ServerPlayer player = playerOf(server, action);
+                    if (player != null) {
+                        DialogUi.showInput(player,
+                                action.has("标题") ? action.get("标题").getAsString() : "",
+                                action.has("提示") ? action.get("提示").getAsString() : "",
+                                action.has("标签") ? action.get("标签").getAsString() : "输入",
+                                action.has("最长") ? action.get("最长").getAsInt() : 8,
+                                action.has("提交指令") ? action.get("提交指令").getAsString() : "nkey");
+                    }
+                }
                 case "关界面" -> {
                     ServerPlayer player = playerOf(server, action);
                     if (player != null) {
@@ -822,19 +847,19 @@ public final class NebulaMod {
 
     /** 只给这名玩家发提示音，不打扰附近玩家。 */
     private static void playSound(ServerPlayer player, JsonObject action) {
-        ResourceLocation id = ResourceLocation.tryParse(
+        Identifier id = Identifier.tryParse(
                 action.has("音效") ? action.get("音效").getAsString() : "");
         if (id == null) {
             return;
         }
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(id);
+        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.getOptional(id).orElse(null);
         if (sound == null) {
             LOG.warn("[星云] 未知音效：{}", id);
             return;
         }
         float volume = action.has("音量") ? (float) action.get("音量").getAsDouble() : 1.0F;
         float pitch = action.has("音调") ? (float) action.get("音调").getAsDouble() : 1.0F;
-        player.playNotifySound(sound, SoundSource.MASTER, volume, pitch);
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.MASTER, volume, pitch);
     }
 
     /** 屏幕中央大标题（购买成功 / 余额不足这类强反馈）。 */
@@ -886,9 +911,7 @@ public final class NebulaMod {
         }
         int remaining = Math.max(1, action.has("数量") ? action.get("数量").getAsInt() : 1);
         Inventory inventory = player.getInventory();
-        remaining = takeFrom(inventory.items, item, remaining);
-        remaining = takeFrom(inventory.offhand, item, remaining);
-        takeFrom(inventory.armor, item, remaining);
+        takeFrom(McSupport.inventorySlots(inventory), item, remaining);
         player.inventoryMenu.broadcastChanges();
     }
 
@@ -952,7 +975,7 @@ public final class NebulaMod {
         JsonObject profile = new JsonObject();
         profile.addProperty("名称", player.getName().getString());
         profile.addProperty("uuid", player.getUUID().toString());
-        profile.addProperty("维度", player.level().dimension().location().toString());
+        profile.addProperty("维度", player.level().dimension().identifier().toString());
         profile.addProperty("x", player.getX());
         profile.addProperty("y", player.getY());
         profile.addProperty("z", player.getZ());

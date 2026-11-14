@@ -6,7 +6,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="nebula_bridge"
-version="0.1.0"
+version="0.2.0"
 displayName="Nebula Bridge"
 description='''
 星云词库引擎的 NeoForge 服务端桥接层。
@@ -16,13 +16,13 @@ description='''
 [[dependencies.nebula_bridge]]
 modId="neoforge"
 type="required"
-versionRange="[21.1,22)"
+versionRange="[21.11,21.12)"
 ordering="NONE"
 side="SERVER"
 
 [[dependencies.nebula_bridge]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1,1.22)"
+versionRange="[1.21.11,1.21.12)"
 ordering="NONE"
 side="SERVER"

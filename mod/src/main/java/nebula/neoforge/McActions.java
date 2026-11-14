@@ -346,13 +346,13 @@ public final class McActions {
     private static String playerArg(MinecraftServer server, JsonObject action) {
         String raw = McSupport.str(action, "玩家");
         ServerPlayer player = McSupport.player(server, raw);
-        return player != null ? player.getGameProfile().getName() : clean(raw);
+        return player != null ? player.getGameProfile().name() : clean(raw);
     }
 
     private static String playerName(MinecraftServer server, JsonObject action) {
         String raw = McSupport.str(action, "玩家");
         ServerPlayer player = McSupport.player(server, raw);
-        return player != null ? player.getGameProfile().getName() : clean(raw);
+        return player != null ? player.getGameProfile().name() : clean(raw);
     }
 
     private static String entityArg(MinecraftServer server, JsonObject action, String key) {
@@ -445,7 +445,7 @@ public final class McActions {
         }
         Item item = McSupport.item(McSupport.str(action, "物品"));
         int slot = McSupport.integer(action, "槽位", 0);
-        if (item == Items.AIR || slot < 0 || slot >= player.getInventory().items.size()) {
+        if (item == Items.AIR || slot < 0 || slot >= player.getInventory().getNonEquipmentItems().size()) {
             return;
         }
         player.getInventory().setItem(slot,
@@ -455,14 +455,14 @@ public final class McActions {
 
     private static void setOffhand(MinecraftServer server, JsonObject action) {
         ServerPlayer player = McSupport.player(server, McSupport.str(action, "玩家"));
-        if (player == null || player.getInventory().offhand.isEmpty()) {
+        if (player == null || player.getInventory().getItem(Inventory.SLOT_OFFHAND).isEmpty()) {
             return;
         }
         Item item = McSupport.item(McSupport.str(action, "物品"));
         if (item == Items.AIR) {
             return;
         }
-        player.getInventory().offhand.set(0,
+        player.getInventory().setItem(Inventory.SLOT_OFFHAND,
                 new ItemStack(item, Math.max(1, McSupport.integer(action, "数量", 1))));
         player.inventoryMenu.broadcastChanges();
     }
@@ -473,9 +473,7 @@ public final class McActions {
             return;
         }
         Inventory inventory = player.getInventory();
-        clearList(inventory.items);
-        clearList(inventory.armor);
-        clearList(inventory.offhand);
+        clearList(McSupport.inventorySlots(inventory));
         player.inventoryMenu.broadcastChanges();
     }
 
@@ -497,9 +495,7 @@ public final class McActions {
         }
         int wanted = Math.max(1, McSupport.integer(action, "数量", 1));
         Inventory inventory = player.getInventory();
-        int remaining = takeFrom(inventory.items, item, wanted);
-        remaining = takeFrom(inventory.offhand, item, remaining);
-        remaining = takeFrom(inventory.armor, item, remaining);
+        int remaining = takeFrom(McSupport.inventorySlots(inventory), item, wanted);
         int dropped = wanted - remaining;
         if (dropped > 0) {
             int left = dropped;
@@ -586,7 +582,7 @@ public final class McActions {
         if (player == null) {
             return;
         }
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         int radius = Math.max(0, Math.min(2, McSupport.integer(action, "数值", 0)));
         var center = player.chunkPosition();
         int sent = 0;
