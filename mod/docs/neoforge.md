@@ -254,13 +254,17 @@ public final class NebulaMod {
 | Rust | stable，`cdylib`，`jni` crate |
 | 构建 | **没有 Gradle**：`build.ps1` 直接调 `cargo build --release` + `javac` + `jar` |
 
-**1.21.11 迁移要点**（旧 1.21.1 服已删除，本目录是唯一主服）：`ResourceLocation` → `Identifier`、
-`GameProfile.getName()` → `name()`、`Inventory` 字段私有化后走 `McSupport.inventorySlots()` 槽位视图、
-`Component.Serializer` → `ComponentSerialization.CODEC`、`EntityType.create` → `TagValueInput` + `EntitySpawnReason.COMMAND`、
-`hasPermission(int)` 删除后改走 `Commands.hasPermission(LEVEL_*)` / `permissions().hasPermission(...)`。
-常量池方法引用是懒解析的，用 1.21.1 编译的 jar 放到 1.21.11 上会「服起得来、玩家一进就崩」，
-所以 `mods.toml` 的依赖范围收紧为 `[1.21.11,1.21.12)` / `[21.11,21.12)`。事件清单必须用
-`python mod/tools/gen_events.py` 从 21.11.42 的 universal jar 重新抽取（当前 267 个事件类）。
+**1.21.11 实现要点**：注册表 id 用 `Identifier`、`GameProfile.name()` 取用户名、
+`Inventory` 字段私有化后走 `McSupport.inventorySlots()` 槽位视图、
+`ComponentSerialization.CODEC` 序列化聊天组件、`EntityType.create(TagValueInput, …)` +
+`EntitySpawnReason.COMMAND` 建实体，权限判断走 `Commands.hasPermission(LEVEL_*)` /
+`permissions().hasPermission(...)`。能用公开 API 的地方直接调用（种子 / 协议号 / 时间 /
+FoodData / 实体交互），只有游戏规则、属性注册表与事件 getter 这类需要动态枚举的场景保留反射。
+
+`mods.toml` 依赖范围锁死为 `[1.21.11,1.21.12)` / `[21.11,21.12)`：其它 MC 版本有破坏性 API
+变更，用错版本编译的 jar 会因常量池方法引用懒解析而「服起得来、玩家一进就崩」。事件清单由
+`python mod/tools/gen_events.py` 从 21.11.42 的 universal jar 抽取（当前 267 个事件类），
+升级 NeoForge 必须重新生成。
 
 早期推荐的 ModDevGradle 2.x / NeoGradle 7.x 方案**未采用**：工程规模小，直接用服务端
 `libraries` 里的官方映射 jar 编译更省事。若将来引入 Mixin 或多模块再评估。

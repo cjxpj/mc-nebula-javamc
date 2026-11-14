@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.food.FoodData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -228,7 +230,7 @@ public final class McActions {
                 case "保存世界" -> run(server, "save-all");
                 case "设环境变量" -> McSupport.setEnv(McSupport.str(action, "名称"),
                         McSupport.str(action, "值"));
-                // 1.21.1 自带 /tick（1.20.3 起），不需要 Mixin 改 tick 循环。
+                // 1.21.11 自带 /tick（1.20.3 起），不需要 Mixin 改 tick 循环。
                 case "设置tick冻结" -> run(server,
                         McSupport.bool(action, "值", true) ? "tick freeze" : "tick unfreeze");
                 case "步进tick" -> run(server, "tick step "
@@ -296,7 +298,7 @@ public final class McActions {
             return;
         }
         try {
-            // performPrefixedCommand 在 1.21.1 返回 void 并把语法错误吞进 sendFailure；
+            // performPrefixedCommand 返回 void 并把语法错误吞进 sendFailure；
             // withSuppressedOutput 又把回显压掉，失败就完全静默了。直接走 Brigadier
             // 的 parse + execute，异常和返回 0 都能看见。
             CommandSourceStack source = server.createCommandSourceStack().withSuppressedOutput();
@@ -339,7 +341,7 @@ public final class McActions {
     /**
      * 命令里的玩家目标必须用 GameProfile 名字。
      *
-     * <p>1.21.1 实测：{@code give <uuid>} / {@code experience set <uuid>} 这类「只允许玩家」
+     * <p>1.21.11 实测：{@code give <uuid>} / {@code experience set <uuid>} 这类「只允许玩家」
      * 的命令会把 UUID 字面量当成实体选择器并直接拒绝；{@code tp <uuid>} 因为接受实体反而
      * 能用。统一用名字最稳，且不要取 {@code getName()}（会被 {@code 设置名牌} 改成显示名）。</p>
      */
@@ -427,13 +429,15 @@ public final class McActions {
         if (player == null) {
             return;
         }
-        Object data = McSupport.invoke(player, "getFoodData");
+        // 1.21.11 的 FoodData 公开了 setFoodLevel / setSaturation；消耗度只有
+        // private 字段 exhaustionLevel（公开 API 只有 addExhaustion，没有 setter）。
+        FoodData data = player.getFoodData();
         switch (op) {
-            case "设置饥饿" -> McSupport.invokeLoose(data, "setFoodLevel",
+            case "设置饥饿" -> data.setFoodLevel(
                     Math.max(0, McSupport.integer(action, "数值", 20)));
-            case "设置饱和度" -> McSupport.invokeLoose(data, "setSaturation",
+            case "设置饱和度" -> data.setSaturation(
                     (float) Math.max(0.0, McSupport.number(action, "数值", 5.0)));
-            default -> McSupport.invokeLoose(data, "setExhaustion",
+            default -> McSupport.setField(data, "exhaustionLevel",
                     (float) Math.max(0.0, McSupport.number(action, "数值", 0.0)));
         }
     }
@@ -565,7 +569,7 @@ public final class McActions {
         player.connection.send(new ClientboundAnimatePacket(player, id));
     }
 
-    /** 客户端区块缓存半径；1.21.1 有原生封包，不需要 Mixin。 */
+    /** 客户端区块缓存半径；1.21.11 有原生封包，不需要 Mixin。 */
     private static void setChunkRadius(MinecraftServer server, JsonObject action) {
         ServerPlayer player = McSupport.player(server, McSupport.str(action, "玩家"));
         if (player == null) {
@@ -603,19 +607,8 @@ public final class McActions {
         }
     }
 
-    /** interactOn 的签名随版本浮动，按参数个数反射调用。 */
+    /** 1.21.11 的 {@code Player#interactOn(Entity, InteractionHand)} 是 public，直接调用。 */
     private static void interact(ServerPlayer player, Entity target) {
-        try {
-            Class<?> handClass = Class.forName("net.minecraft.world.InteractionHand");
-            Object mainHand = null;
-            for (Object constant : handClass.getEnumConstants()) {
-                if ("MAIN_HAND".equals(((Enum<?>) constant).name())) {
-                    mainHand = constant;
-                }
-            }
-            McSupport.invokeLoose(player, "interactOn", target, mainHand);
-        } catch (Exception ignored) {
-            // 该版本没有可调用的交互方法
-        }
+        player.interactOn(target, InteractionHand.MAIN_HAND);
     }
 }

@@ -112,6 +112,5 @@ cargo test --offline --lib
 
 **产物与版本对应关系**：
 
-- 当前主线是 `nebula-neoforge-bridge-0.2.0.jar`，针对 **Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21 专用服务端**编译，由 `mod/build.ps1` 部署到 `server-1.21.11/mods/`（jar 内含 Windows x86_64 的 JNI 库与离线文档站）。
-- GitHub Release `v0.1.0` 附带的 `nebula-neoforge-bridge-0.1.0.jar` 是**旧版 1.21.1 / NeoForge 21.1.265** 的产物，与 1.21.11 不兼容（命令权限系统对象化、`ResourceLocation` 更名 `Identifier`、实体 / 容器 API 重构等），不要混用。
-- 1.21.11 主线源码与 0.2.0 产物尚未打新 tag / 发布新 Release。
+- 当前产物 `nebula-neoforge-bridge-0.2.0.jar`，针对 **Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21 专用服务端**编译，由 `mod/build.ps1` 部署到 `server-1.21.11/mods/`（jar 内含 Windows x86_64 的 JNI 库与离线文档站）。
+- GitHub Release `v0.2.0` 附带的即这份产物。其它 MC 版本的服务端 API 有破坏性差异，**不要混用为别的版本编译的 jar**（常量池方法引用是懒解析的，往往「服起得来、玩家一进就崩」）。

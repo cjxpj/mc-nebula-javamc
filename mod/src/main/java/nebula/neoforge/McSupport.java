@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -39,7 +38,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * <p>两层考虑：</p>
  * <ul>
  *   <li>大量动作走原版命令，不需要碰版本相关的类；查询也尽量只用稳定的公开 API。</li>
- *   <li>少数随版本变动的方法（种子 / 生物群系 / 游戏规则 / 协议版本等）统一走反射，
+ *   <li>少数官方未暴露公开 getter 的方法（游戏规则 / 属性注册表等）统一走反射，
  *       读不到就返回空串，不让一个签名变动拖垮整个 mod 的编译。</li>
  * </ul>
  */
@@ -140,7 +139,7 @@ final class McSupport {
                 String shown = entity.getName().getString();
                 String wanted = raw.trim();
                 // 1.21.11 的 /summon 会把 CustomName:'"TestCow"' 解析成带引号的文本，
-                // 名字匹配同时接受剥掉一层引号的形式（1.21.1 的裸名字不受影响）。
+                // 名字匹配同时接受剥掉一层引号的形式（不带引号的裸名字不受影响）。
                 if (shown.equals(wanted)
                         || (shown.length() >= 2 && shown.startsWith("\"") && shown.endsWith("\"")
                         && shown.substring(1, shown.length() - 1).equals(wanted))) {
@@ -238,25 +237,6 @@ final class McSupport {
         }
     }
 
-    /** 只按方法名 + 参数个数匹配，用于签名随版本浮动的方法（interactOn / FoodData setter…）。 */
-    static Object invokeLoose(Object target, String name, Object... args) {
-        if (target == null) {
-            return null;
-        }
-        for (Method method : target.getClass().getMethods()) {
-            if (!method.getName().equals(name) || method.getParameterCount() != args.length) {
-                continue;
-            }
-            try {
-                method.setAccessible(true);
-                return method.invoke(target, args);
-            } catch (Exception ignored) {
-                // 换下一个重载
-            }
-        }
-        return null;
-    }
-
     /** 依次尝试若干方法名，返回第一个成功的结果。 */
     static Object tryInvoke(Object target, String... names) {
         if (target == null) {
@@ -304,17 +284,6 @@ final class McSupport {
             }
         }
         return false;
-    }
-
-    /** 静态字段：用于按名字查 GameRules.Key / Attributes 这类注册表常量。 */
-    static Object staticField(Class<?> type, String name) {
-        try {
-            Field f = type.getDeclaredField(name);
-            f.setAccessible(true);
-            return Modifier.isStatic(f.getModifiers()) ? f.get(null) : null;
-        } catch (Exception ignored) {
-            return null;
-        }
     }
 
     static String text(Object value) {

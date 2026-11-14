@@ -12,7 +12,7 @@ Usage:
     python mod/tools/gen_events.py --server-dir ../server-1.21.11
 
 The catalog must come from the SAME NeoForge version as the target server;
-a catalog generated from 1.21.1 is useless on 1.21.11.
+a catalog from a different NeoForge version cannot be used on the target server.
 
 --check exits non-zero when the checked-in catalog is stale. CI / regress.py
 can call it to catch a NeoForge upgrade that was not followed by a rebuild.

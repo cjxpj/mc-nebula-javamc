@@ -1,6 +1,6 @@
 # Minecraft 1.21.11 专用服（运行期目录，不入库）
 
-Minecraft 1.21.11 主线专用服实例，**当前唯一主服**；旧 1.21.1 现场已整体删除。本目录内容全部由安装器或开服生成，`.gitignore` 只保留这份说明。
+Minecraft 1.21.11 主线专用服实例，**当前唯一主服**。本目录内容全部由安装器或开服生成，`.gitignore` 只保留这份说明。
 
 - 目标：Minecraft **1.21.11** / NeoForge **21.11.42** / Java 21
 - 编译与回归默认指向这里：`mod/build.ps1`、`mod/selftest/regress.py` 的默认 `-ServerDir` / `--server-dir`
@@ -50,4 +50,4 @@ python mod/selftest/regress.py                                    # 真机回归
 
 jar 会部署到本目录的 `mods/`；回归用独立测试服 `.testserver-1.21.11`，不会碰本目录的 `world/`。
 升级 NeoForge 后还要重跑 `python mod/tools/gen_events.py` 重新抽取事件清单（当前 **267** 个事件类，
-来自 `neoforge-21.11.42-universal.jar`），再全量构建——清单来自旧版 jar 时通用事件桥注册的类名会和运行期对不上。
+来自 `neoforge-21.11.42-universal.jar`），再全量构建——清单与运行期版本不一致时，通用事件桥注册的类名会对不上。

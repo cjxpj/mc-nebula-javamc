@@ -17,6 +17,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -88,7 +89,7 @@ public final class McApi {
                     McSupport.str(request, "标签"));
             case "取物品数" -> countItem(server, request);
             // 世界 / 服务器
-            case "取时间" -> McSupport.text(McSupport.invoke(overworld(server), "getDayTime"));
+            case "取时间" -> dayTime(server);
             case "取难度" -> difficulty(server);
             case "取种子" -> seed(server);
             case "取游戏规则" -> gameRule(server, McSupport.str(request, "名称"));
@@ -97,7 +98,7 @@ public final class McApi {
             case "取MSPT" -> McSupport.mspt();
             case "取服务器tick" -> McSupport.tickCount();
             case "取协议版本" -> protocolVersion(server);
-            case "取服务器版本" -> McSupport.text(McSupport.invoke(server, "getServerVersion"));
+            case "取服务器版本" -> server.getServerVersion();
             case "取环境变量" -> McSupport.env(McSupport.str(request, "名称"));
             case "取本地时间" -> McSupport.localTime();
             case "取模拟暂停" -> tickFrozen(server);
@@ -116,6 +117,12 @@ public final class McApi {
 
     private static ServerLevel overworld(MinecraftServer server) {
         return McSupport.overworld(server);
+    }
+
+    /** 1.21.11 原生 public getter，不再需要按名字反射。 */
+    private static String dayTime(MinecraftServer server) {
+        ServerLevel level = overworld(server);
+        return level == null ? "" : McSupport.text(level.getDayTime());
     }
 
     private static BlockPos pos(JsonObject request) {
@@ -374,10 +381,8 @@ public final class McApi {
     }
 
     private static String seed(MinecraftServer server) {
-        Object data = McSupport.invoke(server, "getWorldData");
-        Object options = McSupport.invoke(data, "worldGenOptions");
-        Object seed = McSupport.invoke(options, "seed");
-        return seed == null ? "0" : McSupport.text(seed);
+        ServerLevel level = overworld(server);
+        return level == null ? "0" : McSupport.text(level.getSeed());
     }
 
     /** 规则按 {@code GameRules.Key#getId()} 匹配；静态常量字段名不随版本稳定，只作兜底。 */
@@ -434,32 +439,14 @@ public final class McApi {
         return Boolean.TRUE.equals(sleeping) ? "是" : "否";
     }
 
-    /** 1.21.1 有原生的 {@code ServerTickRateManager}，不需要 Mixin 就能读冻结状态。 */
+    /** 1.21.11 原生 {@code ServerTickRateManager}，不需要 Mixin 就能读冻结状态。 */
     private static String tickFrozen(MinecraftServer server) {
         return server.tickRateManager().isFrozen() ? "是" : "否";
     }
 
     private static String protocolVersion(MinecraftServer server) {
-        try {
-            Class<?> shared = Class.forName("net.minecraft.SharedConstants");
-            for (Method method : shared.getDeclaredMethods()) {
-                if (method.getParameterCount() != 0 || !method.getName().equals("getCurrentVersion")) {
-                    continue;
-                }
-                method.setAccessible(true);
-                Object version = method.invoke(null);
-                Object protocol = McSupport.tryInvoke(version, "protocolVersion", "getProtocolVersion");
-                if (protocol != null) {
-                    return McSupport.text(protocol);
-                }
-            }
-        } catch (Exception ignored) {
-            // 换用服务端状态里的协议号
-        }
-        Object status = McSupport.invoke(server, "getStatus");
-        Object version = McSupport.invoke(status, "version");
-        Object protocol = McSupport.invoke(version, "protocol");
-        return protocol == null ? "0" : McSupport.text(protocol);
+        // 1.21.11 推荐入口：getCurrentVersion() 未废弃，常量 RELEASE_NETWORK_PROTOCOL_VERSION 已 @Deprecated。
+        return String.valueOf(SharedConstants.getCurrentVersion().protocolVersion());
     }
 
     // ────────────────────────── 实体 ──────────────────────────

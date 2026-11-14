@@ -290,7 +290,7 @@ public final class NebulaMod {
     /**
      * 是否暴击，条件与 {@code Player#attack} 里的 {@code flag2} 完全一致。
      *
-     * <p>1.21.1 的伤害来源不携带暴击标记（暴击只是把伤害乘了 1.5 并放暴击粒子），
+     * <p>1.21.11 的伤害来源不携带暴击标记（暴击只是把伤害乘了 1.5 并放暴击粒子），
      * 所以按原版判定复算一次。事件在 {@code Player#attack} 内部触发，此时 {@code fallDistance}
      * 还没被落地逻辑清零，条件仍然成立。</p>
      */

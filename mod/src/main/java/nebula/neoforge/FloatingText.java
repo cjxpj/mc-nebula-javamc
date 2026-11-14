@@ -31,7 +31,7 @@ import net.minecraft.world.entity.EntitySpawnReason;
  * 词库驱动的悬浮字（RPG 飘字）。
  *
  * <p>用原版 {@code minecraft:text_display} 实体实现，不依赖客户端 mod。实体在宿主里配置：
- * 1.21.1 的 {@code Display} / {@code TextDisplay} setter 全是 private，只能按 NBT 走
+ * 1.21.11 的 {@code Display} / {@code TextDisplay} setter 仍是 private，只能按 NBT 走
  * {@code EntityType.create(CompoundTag, Level)}——即 {@code /summon} 的同一条解析路径，
  * 键名与召唤语法完全一致（{@code text} / {@code billboard} / {@code see_through} /
  * {@code background} / {@code transformation} …）。</p>

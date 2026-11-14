@@ -94,5 +94,25 @@
     "name": "通用事件桥动态注册",
     "log": "REGRESS-EVENTBRIDGE",
     "contains": "EntityJoinLevelEvent"
+  },
+  {
+    "name": "原生API直调-协议号",
+    "log": "REGRESS-NATIVE",
+    "contains": "协议=774"
+  },
+  {
+    "name": "原生API直调-服务器版本",
+    "log": "REGRESS-NATIVE",
+    "contains": "1.21.11"
+  },
+  {
+    "name": "原生API直调-种子与时间",
+    "log": "REGRESS-NATIVE",
+    "contains": "REGRESS-NATIVE|种子="
+  },
+  {
+    "name": "设置消耗度写入",
+    "cmd": "data get entity SelfBot foodExhaustionLevel",
+    "contains": "2.5"
   }
 ]

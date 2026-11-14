@@ -1,6 +1,6 @@
 # `nebula.neoforge` 包结构
 
-9 个类全部已落地（Minecraft 1.21.1 / NeoForge 21.1.265）。整体说明见
+12 个类全部已落地（Minecraft 1.21.11 / NeoForge 21.11.42）。整体说明见
 [`mod/README.md`](../../../../../README.md)，设计与实现现状见
 [`docs/neoforge.md`](../../../../../docs/neoforge.md)。
 
