@@ -207,6 +207,8 @@ struct Field {
     key: &'static str,
     at: usize,
     kind: ArgKind,
+    /// 仅尾部参数可设：实参不足时用这个默认值，而不是 d.int() 返回的 0。
+    default: Option<&'static str>,
 }
 
 #[derive(Clone, Copy)]
@@ -220,8 +222,26 @@ struct Spec {
 
 macro_rules! f {
     ($k:literal, $i:literal, $t:ident) => {
-        Field { key: $k, at: $i, kind: ArgKind::$t }
+        Field { key: $k, at: $i, kind: ArgKind::$t, default: None }
     };
+}
+
+/// Field with a default. Only safe for trailing parameters: omitting a middle
+/// argument would shift every later positional argument.
+macro_rules! fd {
+    ($k:literal, $i:literal, $t:ident, $d:literal) => {
+        Field { key: $k, at: $i, kind: ArgKind::$t, default: Some($d) }
+    };
+}
+
+fn default_value(field: &Field) -> serde_json::Value {
+    let raw = field.default.unwrap_or("");
+    match field.kind {
+        ArgKind::Int => json!(raw.parse::<i64>().unwrap_or(0)),
+        ArgKind::Float => json!(raw.parse::<f64>().unwrap_or(0.0)),
+        ArgKind::Bool => json!(matches!(raw, "是" | "true" | "1" | "开" | "真" | "yes" | "on")),
+        _ => json!(raw),
+    }
 }
 
 macro_rules! q {
@@ -241,7 +261,11 @@ fn build_request(spec: &Spec, d: &mut DicInputs) -> serde_json::Value {
     let mut obj = serde_json::Map::new();
     obj.insert("op".into(), json!(spec.name));
     for field in spec.fields {
-        let value = match field.kind {
+        let missing = d.inputs.len() < field.at;
+        let value = if missing && field.default.is_some() {
+            default_value(field)
+        } else {
+            match field.kind {
             ArgKind::Str => json!(d.string(field.at)),
             ArgKind::Int => json!(d.int(field.at)),
             ArgKind::Float => json!(d.float(field.at)),
@@ -251,6 +275,7 @@ fn build_request(spec: &Spec, d: &mut DicInputs) -> serde_json::Value {
             )),
             ArgKind::Text => json!(d.inputs.string_after(field.at)),
             ArgKind::Player => json!(player_name(&d.string(field.at))),
+            }
         };
         obj.insert(field.key.into(), value);
     }
@@ -265,7 +290,7 @@ fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
         q!("获取方块", "{}", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
         q!("取方块标签", "[]", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
         a!("设方块", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("方块", 5, Str)),
-        a!("设方块状态", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("名称", 5, Str), f!("状态", 6, Text)),
+        a!("设方块状态", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("名称", 5, Str), fd!("状态", 6, Text, "")),
         a!("设方块数据", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("数据", 5, Text)),
         q!("取生物群系", "", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
         a!("设生物群系", f!("维度", 1, Str), f!("x1", 2, Int), f!("z1", 3, Int), f!("x2", 4, Int), f!("z2", 5, Int), f!("群系", 6, Str)),
@@ -282,44 +307,44 @@ fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
         a!("设置模式", f!("模式", 1, Str), f!("玩家", 2, Player)),
         q!("取玩家模式", "", f!("玩家", 1, Player)),
         q!("取玩家血量", "0", f!("玩家", 1, Player)),
-        a!("治疗玩家", f!("玩家", 1, Player), f!("数值", 2, Float)),
-        a!("伤害玩家", f!("玩家", 1, Player), f!("数值", 2, Float)),
+        a!("治疗玩家", f!("玩家", 1, Player), fd!("数值", 2, Float, "1")),
+        a!("伤害玩家", f!("玩家", 1, Player), fd!("数值", 2, Float, "1")),
         a!("击杀玩家", f!("玩家", 1, Player)),
-        a!("踢出玩家", f!("玩家", 1, Player), f!("原因", 2, Text)),
+        a!("踢出玩家", f!("玩家", 1, Player), fd!("原因", 2, Text, "")),
         a!("设置侧边栏", f!("玩家", 1, Player), f!("文本", 2, Text)),
         a!("清除侧边栏", f!("玩家", 1, Player)),
-        a!("设置等级", f!("玩家", 1, Player), f!("数值", 2, Int)),
-        a!("加等级", f!("玩家", 1, Player), f!("数值", 2, Int)),
-        a!("加经验", f!("玩家", 1, Player), f!("数值", 2, Int)),
-        a!("设置经验进度", f!("玩家", 1, Player), f!("数值", 2, Float)),
-        a!("设置饥饿", f!("玩家", 1, Player), f!("数值", 2, Int)),
-        a!("设置饱和度", f!("玩家", 1, Player), f!("数值", 2, Float)),
-        a!("设置消耗度", f!("玩家", 1, Player), f!("数值", 2, Float)),
+        a!("设置等级", f!("玩家", 1, Player), fd!("数值", 2, Int, "0")),
+        a!("加等级", f!("玩家", 1, Player), fd!("数值", 2, Int, "1")),
+        a!("加经验", f!("玩家", 1, Player), fd!("数值", 2, Int, "1")),
+        a!("设置经验进度", f!("玩家", 1, Player), fd!("数值", 2, Float, "0")),
+        a!("设置饥饿", f!("玩家", 1, Player), fd!("数值", 2, Int, "20")),
+        a!("设置饱和度", f!("玩家", 1, Player), fd!("数值", 2, Float, "5")),
+        a!("设置消耗度", f!("玩家", 1, Player), fd!("数值", 2, Float, "0")),
         q!("取玩家权限", "0", f!("玩家", 1, Player)),
-        a!("设置权限", f!("玩家", 1, Player), f!("等级", 2, Int)),
-        a!("给予物品", f!("玩家", 1, Player), f!("物品", 2, Str), f!("数量", 3, Int)),
-        a!("丢弃物品", f!("玩家", 1, Player), f!("物品", 2, Str), f!("数量", 3, Int)),
+        a!("设置权限", f!("玩家", 1, Player), fd!("等级", 2, Int, "0")),
+        a!("给予物品", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
+        a!("丢弃物品", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
         q!("取手持物品", "{}", f!("玩家", 1, Player)),
         q!("取背包物品", "{}", f!("玩家", 1, Player), f!("槽位", 2, Int)),
-        a!("设背包物品", f!("玩家", 1, Player), f!("槽位", 2, Int), f!("物品", 3, Str), f!("数量", 4, Int)),
+        a!("设背包物品", f!("玩家", 1, Player), f!("槽位", 2, Int), f!("物品", 3, Str), fd!("数量", 4, Int, "1")),
         a!("清空背包", f!("玩家", 1, Player)),
         q!("取副手物品", "{}", f!("玩家", 1, Player)),
-        a!("设置副手", f!("玩家", 1, Player), f!("物品", 2, Str), f!("数量", 3, Int)),
+        a!("设置副手", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
         q!("取装备", "[]", f!("玩家", 1, Player)),
-        a!("加效果", f!("玩家", 1, Player), f!("效果", 2, Str), f!("秒", 3, Int), f!("等级", 4, Int)),
+        a!("加效果", f!("玩家", 1, Player), f!("效果", 2, Str), fd!("秒", 3, Int, "30"), fd!("等级", 4, Int, "1")),
         a!("移除效果", f!("玩家", 1, Player), f!("效果", 2, Str)),
-        a!("设置能力", f!("玩家", 1, Player), f!("能力", 2, Str), f!("值", 3, Bool)),
-        a!("设置飞行", f!("玩家", 1, Player), f!("值", 2, Bool)),
-        a!("设置无敌", f!("玩家", 1, Player), f!("值", 2, Bool)),
-        a!("设置隐身", f!("玩家", 1, Player), f!("值", 2, Bool)),
+        a!("设置能力", f!("玩家", 1, Player), f!("能力", 2, Str), fd!("值", 3, Bool, "是")),
+        a!("设置飞行", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
+        a!("设置无敌", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
+        a!("设置隐身", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
         a!("设置名牌", f!("玩家", 1, Player), f!("文本", 2, Text)),
-        a!("设置名牌可见", f!("玩家", 1, Player), f!("值", 2, Bool)),
+        a!("设置名牌可见", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
         a!("玩家加标签", f!("玩家", 1, Player), f!("标签", 2, Str)),
         a!("玩家移除标签", f!("玩家", 1, Player), f!("标签", 2, Str)),
         q!("玩家有标签", "否", f!("玩家", 1, Player), f!("标签", 2, Str)),
         a!("设置玩家出生点", f!("玩家", 1, Player), f!("维度", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("设置区块半径", f!("玩家", 1, Player), f!("数值", 2, Int)),
-        a!("重发区块", f!("玩家", 1, Player), f!("数值", 2, Int)),
+        a!("设置区块半径", f!("玩家", 1, Player), fd!("数值", 2, Int, "8")),
+        a!("重发区块", f!("玩家", 1, Player), fd!("数值", 2, Int, "0")),
         a!("打开背包", f!("玩家", 1, Player)),
         a!("播放动作", f!("玩家", 1, Player), f!("动作", 2, Str)),
         a!("骑乘", f!("玩家", 1, Player), f!("实体", 2, Str)),
@@ -354,25 +379,25 @@ fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
         q!("取模拟暂停", "否"),
         // 5. 实体
         a!("生成生物", f!("维度", 1, Str), f!("类型", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("生成实体", f!("维度", 1, Str), f!("类型", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int), f!("数据", 6, Text)),
+        a!("生成实体", f!("维度", 1, Str), f!("类型", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int), fd!("数据", 6, Text, "")),
         a!("生成粒子", f!("维度", 1, Str), f!("效果", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        q!("取实体列表", "[]", f!("维度", 1, Str), f!("上限", 2, Int)),
+        q!("取实体列表", "[]", f!("维度", 1, Str), fd!("上限", 2, Int, "512")),
         q!("取实体坐标", "{}", f!("实体", 1, Str)),
         q!("取实体数据", "{}", f!("实体", 1, Str)),
         a!("实体传送", f!("实体", 1, Str), f!("维度", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("实体伤害", f!("实体", 1, Str), f!("数值", 2, Float)),
-        a!("实体治疗", f!("实体", 1, Str), f!("数值", 2, Float)),
+        a!("实体伤害", f!("实体", 1, Str), fd!("数值", 2, Float, "1")),
+        a!("实体治疗", f!("实体", 1, Str), fd!("数值", 2, Float, "1")),
         a!("实体击杀", f!("实体", 1, Str)),
         a!("实体移除", f!("实体", 1, Str)),
         a!("实体加标签", f!("实体", 1, Str), f!("标签", 2, Str)),
         a!("实体移除标签", f!("实体", 1, Str), f!("标签", 2, Str)),
         q!("实体有标签", "否", f!("实体", 1, Str), f!("标签", 2, Str)),
         q!("取实体属性", "", f!("实体", 1, Str), f!("属性", 2, Str)),
-        a!("实体隐身", f!("实体", 1, Str), f!("值", 2, Bool)),
+        a!("实体隐身", f!("实体", 1, Str), fd!("值", 2, Bool, "是")),
         // 6.1b 原版 dialog（1.21.6+）：文本输入框 + dynamic/run_command 模板
         a!("弹窗输入", f!("玩家", 1, Player), f!("标题", 2, Str), f!("提示", 3, Str), f!("标签", 4, Str), f!("最长", 5, Int), f!("提交指令", 6, Str)),
         // 6.2 显示特效
-        a!("悬浮字", f!("维度", 1, Str), f!("x", 2, Float), f!("y", 3, Float), f!("z", 4, Float), f!("文本", 5, Str), f!("缩放", 6, Float), f!("上升", 7, Float), f!("时长", 8, Int)),
+        a!("悬浮字", f!("维度", 1, Str), f!("x", 2, Float), f!("y", 3, Float), f!("z", 4, Float), f!("文本", 5, Str), fd!("缩放", 6, Float, "1"), fd!("上升", 7, Float, "1"), fd!("时长", 8, Int, "20")),
     ];
 
     for spec in specs {
@@ -2190,6 +2215,38 @@ mod tests {
         let out = (methods.get("取玩家列表").unwrap())(&mut list).unwrap();
         assert_eq!(any_to_string(&out), "[]");
         assert!(take_actions().is_empty(), "查询不应产生动作");
+    }
+
+    /// 尾部可选参数省略时应落到声明的默认值，而不是 d.int() 的 0 / 空串。
+    /// 只测动作类：查询类在单测里走 fallback，拿不到请求 JSON。
+    #[test]
+    fn optional_tail_params_use_defaults() {
+        let methods = mc_methods();
+        let cases: &[(&str, &[&str], &str, serde_json::Value)] = &[
+            ("给予物品", &["Steve", "minecraft:diamond"], "数量", json!(1)),
+            ("设背包物品", &["Steve", "1", "minecraft:diamond"], "数量", json!(1)),
+            ("加效果", &["Steve", "minecraft:speed"], "秒", json!(30)),
+            ("加效果", &["Steve", "minecraft:speed"], "等级", json!(1)),
+            ("治疗玩家", &["Steve"], "数值", json!(1.0)),
+            ("设置饥饿", &["Steve"], "数值", json!(20)),
+            ("设置饱和度", &["Steve"], "数值", json!(5.0)),
+            ("设置飞行", &["Steve"], "值", json!(true)),
+            ("设置能力", &["Steve", "飞行"], "值", json!(true)),
+            ("实体隐身", &["cow"], "值", json!(true)),
+            ("设置区块半径", &["Steve"], "数值", json!(8)),
+            ("悬浮字", &["minecraft:overworld", "0", "100", "0", "hi"], "缩放", json!(1.0)),
+            ("悬浮字", &["minecraft:overworld", "0", "100", "0", "hi"], "时长", json!(20)),
+            ("踢出玩家", &["Steve"], "原因", json!("")),
+        ];
+        for (name, args, key, expected) in cases {
+            let _ = take_actions();
+            let mut d = fake_inputs(name, args);
+            (methods.get(*name).unwrap())(&mut d).unwrap();
+            let actions = take_actions();
+            assert_eq!(actions.len(), 1, "{name} 应压入一个动作");
+            assert_eq!(actions[0][*key], *expected,
+                "{name} 省略尾参 {key} 时应取默认值");
+        }
     }
 
     /// 随服发行的词库必须能编译：语法错误（缩进、`如果尾`、漏 `$`）在测试里就炸出来，

@@ -8,6 +8,9 @@ $世界.设方块 %SC维% 0 100 0 minecraft:diamond_block$
 $世界.设方块状态 %SC维% 1 100 0 minecraft:oak_log axis=x$
 $世界.填充区域 %SC维% 3 100 0 4 100 1 minecraft:gold_block$
 $世界.给物品 %SC名% minecraft:diamond 3$
+// 省略尾部参数：数量默认 1、效果秒数默认 30 / 等级默认 1。
+$世界.给予物品 %SC名% minecraft:emerald$
+$世界.加效果 %SC名% minecraft:haste$
 $世界.设置模式 创造 %SC名%$
 $世界.加效果 %SC名% minecraft:speed 60 1$
 $世界.玩家加标签 %SC名% regress$
@@ -56,7 +59,8 @@ V5:$世界.玩家有标签 %SC名% regress$
 V6:$世界.取方块 minecraft:overworld 0 100 0$
 V7:$世界.取方块数据 minecraft:overworld 1 100 0$
 V8:$世界.取玩家数量$
-$世界.执行命令 say REGRESS-V1|模式=%V1%|暂停=%V3%|钻石=%V4%|标签=%V5%|方块=%V6%|数量=%V8%$
+E1:$世界.取物品数 %SC名% minecraft:emerald$
+$世界.执行命令 say REGRESS-V1|模式=%V1%|暂停=%V3%|钻石=%V4%|标签=%V5%|方块=%V6%|数量=%V8%|绿宝石=%E1%$
 $世界.执行命令 say REGRESS-V2|橡木数据=%V7%|维度=%V2.维度%|名称=%V2.名称%$
 // 1.21.11 原生 API 直调：种子 / 协议号 / 版本 / 时间；顺带反查消耗度字段写入。
 V9:$世界.取种子$

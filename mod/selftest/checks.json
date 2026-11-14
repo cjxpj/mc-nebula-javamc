@@ -114,5 +114,15 @@
     "name": "设置消耗度写入",
     "cmd": "data get entity SelfBot foodExhaustionLevel",
     "contains": "2.5"
+  },
+  {
+    "name": "尾参默认值-数量",
+    "log": "REGRESS-V1",
+    "contains": "绿宝石=1"
+  },
+  {
+    "name": "尾参默认值-效果时长等级",
+    "cmd": "data get entity SelfBot active_effects",
+    "contains": "minecraft:haste"
   }
 ]
