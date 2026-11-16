@@ -51,6 +51,9 @@ __pycache__/
 logs/
 .workbuddy/
 
+# ── 本地打包产物（发布走 GitHub Release，不進 git）──
+dist/
+
 # ── 编辑器 / 系统 ──
 .idea/
 .vscode/
