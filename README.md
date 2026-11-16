@@ -1,116 +1,132 @@
-# 星云 × Minecraft Java 版（NeoForge 为主）
+# 星云 × Minecraft Java 版
 
-把星云词库引擎（`.n` 词库）挂到 Minecraft Java 版服务端。本目录与 [`bedrock/`](../bedrock/bridge/README.md) 对称：`bridge/` 是平台无关的 Rust 桥接层，`NebulaLoadMod/` 是 NeoForge mod 工程（源码 + 文档），`server-1.21.11/` 是专用服实例（运行期数据）；三者平级，源码与运行期不混放。
+把星云词库引擎（`.n` 脚本）接到 Minecraft Java 服务端的 NeoForge 桥接层。
 
-> 状态：NeoForge 是唯一主方案，已在 Minecraft 1.21.11 / NeoForge 21.11.42 上落地；曾评估的 Paper / Spigot 备选分支已移除，取舍记录见 [`NebulaLoadMod/docs/platform-choice.md`](NebulaLoadMod/docs/platform-choice.md)。
-
-## 1. 结论先行
-
-- **主方案**：NeoForge mod（服务端）+ Rust `cdylib`（JNI）+ 星云词库。
-- **注入对象**：词库统一用 `$世界.方法 …$` 调用。
-- **服务端专属**：词库只在服务端主线程运行，不下发到客户端，不需要客户端安装 mod。
-- **词库目录**：`<gameDir>/nebula/<插件名>/`，与 `bedrock/server-1.21.11/nebula/` 同构（当前固定，不可配置）。
-- **离线文档站点**：`build.ps1` 把 `NebulaLoadMod/docs` 的 `.md` + `index.html` 打进 jar，开服时铺到 `<gameDir>/nebula/_docs/`（下划线前缀，引擎 `scan_plugins` 跳过，不当词库编译）；纯静态单文件，浏览器双击 `index.html` 就能看，不需要起服务。同目录 `version.txt` 记录生成它的模组版本（取自 `neoforge.mods.toml`，版本一改下次开服必整体刷新）。
-- **插件指令**：词库在 `[f]初始化` 里 `$世界.注册指令 商店 0 shop 泥土商店$` 自注册，`[f]卸载` 里 `$世界.注销指令$` 移除；执行时按规范名匹配 `[指令]商店|shop` 词条，只跑命中的那一条（没有 `[指令]` 词条时返回 `ok=false`）。
-- **可视化**：`$面:$世界.创建界面 玩家 行数 标题$` 返回界面对象，之后 `$世界.界面物品 面 …$` 等只操作这个对象；`$世界.打开界面 面 回调$` 把 `回调:[函数] … 结束` 闭包交给宿主，点击时直接执行闭包（payload 作为 `%参数1%`）。界面统一用「对象 + 点击闭包」。
-- **`世界` 方法**：按 [`NebulaLoadMod/docs/mc-api-map.md`](NebulaLoadMod/docs/mc-api-map.md) 全量落地 131 个（方块 / 坐标 / 玩家 / 世界 / 实体，含查询与动作），唯一占位是 `打开背包`；参数位次、降级清单与真机实测结论见该文档第 0 节。
-- **示例**：`server-1.21.11/nebula/` 下有 `示例` / `伤害显示` / `连锁砍树` / `泥土商店`（泥土计价、买/卖双页、确认弹窗）/ `登录`（原版 dialog 弹窗输入密码，两次设置 + 冻结 + 300 秒超时踢人）/ `掉落物堆叠`（生电服同类掉落物聚拢，宿主逻辑计数的无限堆叠）。
-- **共用资产**：`javamc/bridge/`（JNI 契约）、`javamc/server-1.21.11/nebula/示例/`（示例词库）。
-
-## 2. 与基岩版的对应关系
-
-| 层 | 基岩版（`bedrock/`） | Java 版（`javamc/`） |
-| --- | --- | --- |
-| 服务端宿主 | BDS + LeviLamina | NeoForge（Minecraft Java 服务端） |
-| 桥接层 | `bedrock/bridge`（Pier C ABI + Rust cdylib） | `javamc/bridge`（JNI + Rust cdylib） |
-| 平台 mod / 插件 | LeviLamina 插件 | `javamc/NebulaLoadMod`（NeoForge mod） |
-| 词库目录 | `bedrock/server-1.21.11/nebula/<插件名>/` | `javamc/server-1.21.11/nebula/<插件名>/` |
-| 生命周期 | `[f]初始化` / 加载 / 重载 / 卸载 | 同左，但语义有差别（见设计文档第 4.2 节） |
-| `世界` 原语 | Rust 直接调 BDS API | Rust → JNI → NeoForge / Minecraft API |
-| 事件源 | LeviLamina 事件总线 | NeoForge 事件总线 |
-
-## 3. 目录
+**一句话**：mod 只提供引擎原语，玩法逻辑全部写在 `.n` 词库文件里 —— 加一只怪、改一个物品、写一套界面，都不用重编 jar、不用重启服务端。
 
 ```text
-javamc/
-├── README.md                         ← 本文：总览与结论
-├── bridge/                           ← Rust JNI 桥接层（与平台无关）
-│   └── README.md
-├── NebulaLoadMod/                              ← mod 工程：只有源码 / 文档 / 构建脚本
-│   ├── README.md
-│   ├── docs/                         ← 文档（随 mod 工程走）
-│   │   ├── plugin-guide.md           ← 词库插件开发指南（写插件先看这个）
-│   │   ├── apis/                     ← LLSE 体例的 API 手册（131 条，手写维护）
-│   │   ├── index.html                ← 浏览器入口（离线单文件，纯静态、无生成脚本）
-│   │   ├── README.md                 ← 索引、事实来源与维护约定
-│   │   ├── neoforge.md               ← 设计决策 + 实现现状
-│   │   ├── mc-api-map.md             ← `世界` 方法 ↔ API 映射（编译期契约）
-│   │   └── platform-choice.md        ← 平台取舍记录（归档）
-│   ├── build.ps1 / gradle.properties
-│   ├── selftest/                     ← 一键回归自检
-│   └── src/main/...
-└── server-1.21.11/                           ← NeoForge 专用服（运行期，已安装 21.11.42）
-    ├── README.md
-    ├── mods/                         ← mod 构建产物部署到这里
-    ├── nebula/示例/{main.n, nebula.ini}
-    ├── world/ logs/ config/ ...
-    └── run.bat / run.sh / user_jvm_args.txt
+           ┌──────────── 玩家客户端 ────────────┐
+           │  同一个 jar（两端必须同版本）        │
+           └───────────────┬───────────────────┘
+                           │ 资源包（模型/贴图/语言/客户端声明）
+┌──────────────────────────┴───────────────────────────┐
+│ NeoForge 服务端                                       │
+│  ├─ NebulaLoadMod   宿主：注册项、事件桥、渲染、网络    │
+│  ├─ bridge          Rust cdylib（JNI）：词库引擎 + JIT  │
+│  └─ nebula/<插件>/  ← 你写的地方：main.n + 资源/       │
+└──────────────────────────────────────────────────────┘
 ```
 
-`NebulaLoadMod/` 与 `server-1.21.11/` 不共用目录：`NebulaLoadMod/build.ps1` 把 jar 部署到 `server-1.21.11/mods/`，词库根固定在 `server-1.21.11/nebula/`；`server-1.21.11/` 只放运行期数据与随服词库，不放源码。
+## 能做什么
 
-## 4. 评审入口
+| 领域 | 词库能声明的 |
+|---|---|
+| 生物 | 属性、容器、碰撞箱、体/盖造型盒子、逐面 UV、多张贴图、8 个动画量、AI 目标、右键交互、死亡掉落、刷怪蛋 |
+| 物品 | 基底、模型、贴图、堆叠、颜色、稀有度、耐久、描述、属性修饰符、创造页 |
+| 世界 | 133 个 `世界` 方法（方块 / 实体 / 粒子 / 音效 / 容器 / 传送 / MOTD / 图标 / 指令 / GUI / 悬浮字） |
+| 事件 | 6 个内置中文事件 + 267 条 NeoForge 事件（中英双键） |
+| 其他 | 皮肤、列表 MOTD 与图标、资源包、mod 自发布与更新提示 |
 
-**写词库插件先看 [`NebulaLoadMod/docs/plugin-guide.md`](NebulaLoadMod/docs/plugin-guide.md)**：从建目录、语法、生命周期钩子，到指令、配置 JSON、界面闭包，含一个完整可运行示例和排错清单。
+设计边界（哪些归词库、哪些归引擎）写在 [`docs/能力边界.md`](docs/能力边界.md)。
 
-三份设计文档都在 `NebulaLoadMod/docs/`，索引与维护约定见 [`NebulaLoadMod/docs/README.md`](NebulaLoadMod/docs/README.md)。浏览器入口是 [`NebulaLoadMod/docs/index.html`](NebulaLoadMod/docs/index.html)（离线单文件，默认打开插件开发指南，带目录与筛选）。
+## 兼容性
 
-1. 写插件：[`NebulaLoadMod/docs/plugin-guide.md`](NebulaLoadMod/docs/plugin-guide.md) —— 语法、钩子、事件、指令、配置、界面、完整示例与排错。
-2. 查方法：[`NebulaLoadMod/docs/apis/README.md`](NebulaLoadMod/docs/apis/README.md) —— 按 LLSE 体例组织的 131 条 API 手册（签名 / 参数类型 / 返回值 / 示例），按类别分篇；契约表与真机实测结论在 [`mc-api-map.md`](NebulaLoadMod/docs/mc-api-map.md)。
-3. 改桥接 / 改 mod：[`NebulaLoadMod/docs/neoforge.md`](NebulaLoadMod/docs/neoforge.md) —— 边界、生命周期、事件桥、线程、构建与决策台账；每条都标了「已落地 / 规划 / 已废弃」。
-4. 宿主选型归档：[`NebulaLoadMod/docs/platform-choice.md`](NebulaLoadMod/docs/platform-choice.md) —— 为什么以 NeoForge 为主（原 Paper 备选分支已移除）。
-5. 目录骨架：[`bridge/`](bridge/README.md)（Rust JNI）、[`NebulaLoadMod/`](NebulaLoadMod/README.md)（mod 源码 + 文档 + `selftest/` 一键回归）、[`server-1.21.11/`](server-1.21.11/README.md)（专用服运行期）。
+| 项 | 版本 |
+|---|---|
+| Minecraft | 1.21.11 |
+| NeoForge | `[21.11, 21.12)`（开发用 21.11.42） |
+| JDK | 21 |
 
-## 5. 决策台账（详见 `NebulaLoadMod/docs/neoforge.md` 第 9 节）
+两端必须装**同一个 jar**：服务端注册了动态生物实体与外观方块，客户端拿旧 jar 会在配置阶段被 registry sync 拒绝。
 
-**已定**：Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21；构建用 `build.ps1` + `javac`，不引入 Gradle；词库根固定 `<gameDir>/nebula`；只支持专用服务端；界面点击用自定义 `ChestMenu`，不引入 Mixin；原生库 jar 内打包、运行时解压；插件指令由词库自注册。
+## 安装
 
-**仍开放**：Linux / macOS 原生库打包、`nebula-bridge.toml` 配置化、规划中的事件转发、`$异步$` 结果回主线程、集成服务端支持。
+1. 从 [Releases](../../releases/latest) 下载 `nebula-neoforge-bridge-<版本>.jar`
+2. 丢进**服务端** `mods/`；想看到生物外观与资源包，客户端 `mods/` 也放同一份
+3. 启动服务端。首次启动会生成：
+   - `nebula/` —— 词库目录（自带 15 个示例插件）
+   - `nebula/_docs/` —— 离线文档，用浏览器打开 `index.html` 就能看
+4. 端口：游戏 `25567`、资源包与自发布 HTTP `25568`（可在 `server.properties` 与 `config/nebula-bridge/pack.properties` 调整）
 
-## 6. 常用命令
+## 快速开始
+
+`nebula/我的插件/main.n`：
+
+```n
+[f]初始化
+怪:$世界.注册生物 myserver:boxy$
+$怪.设 名称 小箱子$
+$怪.设 体型 small$
+$怪.设 容器格数 27$
+$怪.外观 方块 nebula_bridge:mob_body_8 nebula_bridge:block/my_body -0.5 0 -0.5 0.45$
+$怪.加物品 刷怪蛋 minecraft:clay_ball my_egg 小箱子蛋 nebula:item/my_egg nebula:item/my_egg 16 生成蛋 gold$
+$怪.生效$
+
+[事件]每秒
+表:$怪.列表 64$
+遍历:i,个=%表%
+    $巡逻 %个.uuid%$
+结束
+```
+
+把贴图放 `资源/方块材质/my_body.png`、`资源/物品材质/my_egg.png`，然后：
+
+```text
+/nebula load 我的插件
+```
+
+创造模式「生成蛋」页里就有蛋了。改完再 `load` 一次即生效。
+
+> 完整语法与踩坑清单见 [`NebulaLoadMod/docs/plugin-guide.md`](NebulaLoadMod/docs/plugin-guide.md)。
+
+## 目录
+
+```text
+.
+├── bridge/                 Rust JNI 桥接层（词库引擎 + 世界方法表 + 生物/物品对象）
+├── NebulaLoadMod/          宿主 mod（Java）＋ 文档 ＋ 回归脚本
+│   ├── src/main/java/      服务端：注册项、事件桥、世界方法、资源包派生、自发布
+│   ├── src/client/java/    客户端：渲染器、资源包声明读取、更新提示
+│   ├── docs/               离线文档（会打进 jar 并铺到 nebula/_docs/）
+│   └── selftest/           回归脚本（Python + mineflayer 假玩家）
+├── docs/                   设计与边界文档
+└── server-1.21.11/         专用服实例：词库示例（运行期数据不入库）
+```
+
+## 构建
 
 ```powershell
-# 一键打包（更新引擎后必走）：先重链 dll → 再打 jar → 指纹校验；加 -Regression 顺带跑真机回归
-powershell -ExecutionPolicy Bypass -File bridge/pack.ps1
+# 只改 Java / 词库 / 文档
+powershell -File NebulaLoadMod/build.ps1
 
-# 全量构建（Rust release + javac + jar → server-1.21.11/mods），只改 Java、引擎没动时加 -SkipRust
-powershell -ExecutionPolicy Bypass -File NebulaLoadMod/build.ps1
-
-# Rust 单测：文档 ↔ 函数 / 规格表 ↔ 宿主 / 参数位次 / 随服词库编译，7 条
-cd bridge; cargo test --offline --lib
-
-# 1.21.11 真机一键回归：隔离服 + 双假玩家 + 原版命令反查，19/19 PASS
-python NebulaLoadMod/selftest/regress.py
-
-# 只校验产物与源码是否一致（秒级，不启服）
-python NebulaLoadMod/selftest/regress.py --verify-only
-
-# 改完映射文档 / 规格表后：手工同步 apis/*.md 与 index.html（无生成脚本），再跑单测
-cargo test --offline --lib
+# 改了 bridge/src（引擎）
+powershell -File bridge/pack.ps1
 ```
 
-改词库用 `/nebula load <插件>`（已加载即重编译，或 `/nebula debug` 自动重编译），改 mod / 桥接需重启；主服游戏端口 25567 / RCON 25577，停服走 `stop`，不要用 taskkill。
+- `.ps1` 必须是纯 ASCII（PowerShell 5.1 按 GBK 读）
+- 版本号唯一源：`NebulaLoadMod/src/main/resources/META-INF/neoforge.mods.toml`
+- 客户端源集需要本机一份 `minecraft-client-patched` jar，路径写进 `NebulaLoadMod/client-jar.txt`（不入库）
+- **服务端跑着的时候别构建**，覆盖正在被读的 jar 会崩服
 
-## 7. 独立仓库的构建前置
+回归：
 
-本仓库只含 `javamc/`，是从原来的 `mc-nebula/`（同层另有 `bedrock/`）单独拆出来发布的，因此保留了两处旧布局的痕迹：
+```text
+python NebulaLoadMod/selftest/regress.py                  # 全量（会起测试服）
+python NebulaLoadMod/selftest/regress.py --verify-only     # 只校验产物与源码指纹
+cd bridge && cargo test --offline --lib -- --test-threads=1
+```
 
-- **引擎 crate 是仓库外依赖**：`bridge/Cargo.toml` 写的是 `nebula = { path = "../../../rust-nebula/crates/nebula", features = ["jit"] }`，指向外部的 `rust-nebula` 引擎仓库（目前为私有，且 `jit` 特性需要 rustc 1.96+）。clone 本仓库后，需把引擎放到相对路径 `../../../rust-nebula/`，或把 `path` 改成本地实际位置，否则 `cargo build` 会直接失败。
-- **少数相对链接指向上层目录**：如开头与表格中的 `../bedrock/bridge/README.md`，原意是同级的基岩版实现，单独 clone 后该路径不存在，按名称到对应仓库查阅即可。
+## 文档
 
-**运行期数据不入库**（规则见 `.gitignore`）：`server-1.21.11/libraries/`、`.jdk/`、`world/`、`config/`、`mods/`、`logs/`、`crash-reports/` 都由安装器或开服生成；`server-1.21.11/nebula/_docs/` 是开服时从 `NebulaLoadMod/docs/` 铺出的文档副本；`server-1.21.11/nebula/*/data/` 含登录插件的账号哈希、盐与会话，属于运行期数据。要在新机器复现专用服，需自行运行 NeoForge 21.11.42 安装器，再参考 `server-1.21.11/server.properties`、`run.bat`、`run.sh` 启动。
+| 文档 | 内容 |
+|---|---|
+| [`plugin-guide.md`](NebulaLoadMod/docs/plugin-guide.md) | 词库插件作者指南：语法、目录、坑、生物/物品/界面全流程 |
+| [`mc-api-map.md`](NebulaLoadMod/docs/mc-api-map.md) | 133 个 `世界` 方法与 267 个事件的完整参数表 |
+| [`能力边界.md`](docs/能力边界.md) | 哪些归词库、哪些归引擎、还剩什么没接管 |
+| [`注册生物-设计与规格.md`](docs/注册生物-设计与规格.md) | 生物对象方法的内部规格 |
+| `nebula/_docs/index.html` | 上面这些的离线站点版（开服即生成） |
 
-**产物与版本对应关系**：
+## 许可
 
-- 当前产物 `nebula-neoforge-bridge-0.2.0.jar`，针对 **Minecraft 1.21.11 / NeoForge 21.11.42 / Java 21 专用服务端**编译，由 `NebulaLoadMod/build.ps1` 部署到 `server-1.21.11/mods/`（jar 内含 Windows x86_64 的 JNI 库与离线文档站）。
-- GitHub Release `v0.2.0` 附带的即这份产物。其它 MC 版本的服务端 API 有破坏性差异，**不要混用为别的版本编译的 jar**（常量池方法引用是懒解析的，往往「服起得来、玩家一进就崩」）。
+保留所有权利（All Rights Reserved）。源码公开供学习与参考；在服务器上使用请自行承担风险，
+二次分发或商用请联系作者。
