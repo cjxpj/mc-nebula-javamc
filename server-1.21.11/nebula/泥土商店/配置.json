@@ -1,0 +1,10 @@
+{
+  "货币": "minecraft:dirt",
+  "货币名": "泥土",
+  "标题": "泥土商店",
+  "音效开": "minecraft:block.chest.open",
+  "音效点": "minecraft:ui.button.click",
+  "音效买": "minecraft:entity.player.levelup",
+  "音效卖": "minecraft:entity.experience_orb.pickup",
+  "音效错": "minecraft:entity.villager.no"
+}

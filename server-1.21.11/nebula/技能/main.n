@@ -1,0 +1,61 @@
+// 星云物品技能（纯词库实现）
+// 右键触发，靠中文事件「右键物品」分发。
+// 判定物品不靠名字，靠 custom_data 里的 nebula_id（原版 execute if items 精确匹配）。
+//
+// 注意：
+//  1. 每一处 $调用$ 都必须以 $ 结尾。
+//  2. 只订阅「右键物品」：右键空气、右键普通方块都会走到这里；
+//     冲着箱子/门这类"自己会响应交互"的方块右键不会触发（原版行为，可接受）。
+
+[f]初始化
+$世界.执行命令 scoreboard objectives add ncd_sword dummy$
+$世界.注册指令 技能 0 星云技能$
+
+[f]加载
+星云技能已加载
+
+[事件]每秒
+$世界.执行命令 scoreboard players add @a ncd_sword 0$
+$世界.执行命令 scoreboard players remove @a[scores={ncd_sword=1..}] ncd_sword 1$
+
+[事件]右键物品
+人:%玩家名%
+物:%物品%
+$分发 %人% %物%$
+
+[函数]分发 人 物
+如果:%物%==minecraft:diamond_sword
+    $星光斩 %人%$
+    返回
+如果尾
+如果:%物%==minecraft:paper
+    $传送 %人%$
+    返回
+如果尾
+
+// ────────────────────────── 星光斩 ──────────────────────────
+// 半径 4.5 格范围伤害 9 点，带横扫粒子与音效，冷却 3 秒。
+// 四条命令共用同一组门槛（手持星云剑 + 冷却已就绪），最后一条才写冷却，
+// 这样同一 tick 内不会因为动作队列顺序而重复结算。
+[函数]星光斩 人
+令:execute as %人% at @s if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"star_sword"}] if score @s ncd_sword matches ..0 run particle minecraft:sweep_attack ~ ~1 ~ 0.9 0.7 0.9 0.05 40 normal
+$世界.执行命令 %令%$
+令:execute as %人% at @s if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"star_sword"}] if score @s ncd_sword matches ..0 run execute as @e[distance=0.1..4.5,type=!minecraft:item,type=!minecraft:item_display,type=!minecraft:block_display,type=!minecraft:text_display] run damage @s 9 minecraft:player_attack by %人%
+$世界.执行命令 %令%$
+令:execute as %人% at @s if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"star_sword"}] if score @s ncd_sword matches ..0 run playsound minecraft:entity.player.attack_sweep player @a[distance=..16] ~ ~ ~ 1 0.8
+$世界.执行命令 %令%$
+令:execute as %人% at @s if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"star_sword"}] if score @s ncd_sword matches ..0 run scoreboard players set @s ncd_sword 3
+$世界.执行命令 %令%$
+
+// ────────────────────────── 传送符 ──────────────────────────
+// 朝视线方向传送 18 格，落点必须是可替换方块（空气/草/水等），否则原地不动也不消耗。
+// 顺序：音效 → 粒子 → 传送 → 扣 1 张。先传后扣：tp 不改变背包，扣符时手上符还在，门槛能命中。
+[函数]传送 人
+令:execute as %人% at @s anchored eyes positioned ^ ^ ^18 if block ~ ~ ~ #minecraft:replaceable if block ~ ~1 ~ #minecraft:replaceable if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"teleport_scroll"}] run playsound minecraft:entity.enderman.teleport player @a[distance=..16] ~ ~ ~ 1 1.2
+$世界.执行命令 %令%$
+令:execute as %人% at @s anchored eyes positioned ^ ^ ^18 if block ~ ~ ~ #minecraft:replaceable if block ~ ~1 ~ #minecraft:replaceable if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"teleport_scroll"}] run particle minecraft:portal ~ ~ ~ 0.4 0.9 0.4 0.5 40 normal
+$世界.执行命令 %令%$
+令:execute as %人% at @s anchored eyes positioned ^ ^ ^18 if block ~ ~ ~ #minecraft:replaceable if block ~ ~1 ~ #minecraft:replaceable if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"teleport_scroll"}] run tp @s ~ ~ ~
+$世界.执行命令 %令%$
+令:execute as %人% if items entity @s weapon.mainhand *[minecraft:custom_data~{nebula_id:"teleport_scroll"}] run clear @s minecraft:paper[minecraft:custom_data~{nebula_id:"teleport_scroll"}] 1
+$世界.执行命令 %令%$

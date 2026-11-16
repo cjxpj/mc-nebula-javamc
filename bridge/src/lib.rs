@@ -55,6 +55,32 @@ fn current_plugin_name() -> String {
     CURRENT_PLUGIN.with(|p| p.borrow().clone()).unwrap_or_default()
 }
 
+/// 插件名 → 插件目录。`$java.eval "xxx.java"` 的相对路径按它解析。
+///
+/// 单独一张表而不是再加一个 thread-local：`set_current_plugin` 有五六处调用点，
+/// 而插件目录在编译期就定了，记一次就够，不必跟着执行上下文走。
+static PLUGIN_DIRS: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
+
+fn plugin_dirs() -> &'static Mutex<HashMap<String, PathBuf>> {
+    PLUGIN_DIRS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn remember_plugin_dir(name: &str, dir: &Path) {
+    plugin_dirs()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(name.to_string(), dir.to_path_buf());
+}
+
+fn current_plugin_dir() -> Option<PathBuf> {
+    let name = current_plugin_name();
+    plugin_dirs()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(&name)
+        .cloned()
+}
+
 /// 词库侧的界面对象：`$世界.创建界面$` 返回 id，后续 `界面物品` / `打开界面` 都带这个 id。
 #[derive(Clone)]
 struct GuiState {
@@ -78,6 +104,1241 @@ fn parse_gui_id(raw: &str) -> u64 {
 
 fn take_actions() -> Vec<serde_json::Value> {
     ACTIONS.with(|a| std::mem::take(&mut *a.borrow_mut()))
+}
+
+// ────────────────────────────── 生物对象 ──────────────────────────────
+
+/// 一个生物品种的运行时条目。实例是词库里的 `Value::Class`，这里持有同一份 `Arc`。
+struct MobEntry {
+    plugin: String,
+    instance: Arc<DicClass>,
+    /// 是否已调用过 `$怪.生效$`；未生效的在编译结束时自动补提交。
+    committed: bool,
+    /// 本轮编译代次：同代次重复注册视为幂等，旧代次在编译成功后整体清掉。
+    generation: u64,
+}
+
+static MOBS: OnceLock<Mutex<BTreeMap<String, MobEntry>>> = OnceLock::new();
+static MOB_SEQ: AtomicU64 = AtomicU64::new(1);
+
+thread_local! {
+    /// 当前编译轮次；`注册生物` 用它标记对象归属哪一轮。
+    static MOB_GENERATION: Cell<u64> = const { Cell::new(0) };
+}
+
+fn mobs() -> &'static Mutex<BTreeMap<String, MobEntry>> {
+    MOBS.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+/// 字段白名单与默认值（顺序即 `生效` 打包顺序）。`名称` 的默认值是品种 id。
+const MOB_FIELDS: &[(&str, &str)] = &[
+    ("名称", ""),
+    ("体型", "normal"),
+    ("分类", "creature"),
+    ("持久", "是"),
+    ("血量", "20"),
+    ("速度", "0.22"),
+    ("跳跃", "0.42"),
+    ("击退", "0.4"),
+    ("容器格数", "0"),
+    ("容器距离", "8"),
+    ("碰撞箱", ""),
+    ("死亡掉落", "是"),
+    ("行为", ""),
+];
+
+fn mob_instance(d: &DicInputs) -> Option<Arc<DicClass>> {
+    d.v.scope.self_class()
+}
+
+fn mob_str(inst: &DicClass, key: &str) -> String {
+    match inst.local_value.get(key) {
+        Some(NValue::Str(s)) => s,
+        Some(other) => any_to_string(&other),
+        None => String::new(),
+    }
+}
+
+fn mob_error(d: &mut DicInputs, text: impl Into<String>) {
+    d.v.scope.set("报错", NValue::Str(text.into()));
+}
+
+fn mob_validate(key: &str, value: &str) -> Result<(), String> {
+    match key {
+        "品种" => Err("品种 只读，创建时通过 $世界.注册生物 指定".into()),
+        "动画" => Err("动画 请用 `$怪.动画 键 值$`（弹跳/前倾/开盖/开合）".into()),
+        "造型" => Err("造型 请用 `$怪.造型 体|盖 fromx fromy fromz tox toy toz$`".into()),
+        "贴图" | "UV" => Err("UV 请用 `$怪.贴图 体|盖 面 u0 v0 u1 v1 [材质名]$`".into()),
+        "材质" => Err("材质 请用 `$怪.材质 名字 贴图$`".into()),
+        "目标" => Err("目标 请用 `$怪.目标 类型 [对象] [数值1] [数值2]$`".into()),
+        "交互" => Err("交互 请用 `$怪.交互 开容器|无|给予 物品 数量$`".into()),
+        "掉落" => Err("掉落 请用 `$怪.掉落 物品 [概率] [数量]$`".into()),
+        "名称" | "行为" => Ok(()),
+        "体型" => match value {
+            "tiny" | "small" | "normal" | "large" => Ok(()),
+            _ => Err(format!("体型 只能是 tiny/small/normal/large，收到「{value}」")),
+        },
+        "分类" => Ok(()),
+        "持久" | "死亡掉落" => match value {
+            "是" | "否" | "true" | "false" => Ok(()),
+            _ => Err(format!("{key} 只能是 是/否，收到「{value}」")),
+        },
+        "血量" | "速度" | "跳跃" | "击退" | "容器距离" => value
+            .trim()
+            .parse::<f64>()
+            .map(|_| ())
+            .map_err(|_| format!("{key} 必须是数字，收到「{value}」")),
+        // 「自动」= 按 `$怪.造型$` 的体/盖并集算；也可以直接写「宽,高」。
+        "碰撞箱" => {
+            let text = value.trim();
+            if text.is_empty() || text == "自动" || text.eq_ignore_ascii_case("auto") {
+                Ok(())
+            } else {
+                let parts: Vec<&str> = text
+                    .split(|c: char| matches!(c, ',' | '，' | ' ' | 'x' | 'X' | '*'))
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if parts.len() != 2 {
+                    return Err("碰撞箱 写「自动」或「宽,高」（例：0.9,1.0）".into());
+                }
+                for part in parts {
+                    match part.parse::<f64>() {
+                        Ok(n) if n > 0.05 && n <= 8.0 => {}
+                        _ => {
+                            return Err(format!("碰撞箱 的宽/高必须是 0.05..8 的数字，收到「{part}」"));
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+        "容器格数" => value
+            .trim()
+            .parse::<i64>()
+            .map_err(|_| format!("容器格数 必须是整数，收到「{value}」"))
+            .and_then(|n| {
+                if (0..=54).contains(&n) {
+                    Ok(())
+                } else {
+                    Err(format!("容器格数 必须在 0..=54，收到 {n}"))
+                }
+            }),
+        _ => Err(format!("未知字段「{key}」，可用：{}", MOB_FIELD_NAMES)),
+    }
+}
+
+const MOB_FIELD_NAMES: &str =
+    "名称/体型/分类/持久/血量/速度/跳跃/击退/容器格数/容器距离/碰撞箱/死亡掉落/行为";
+
+/// 把对象当前字段打包成一条 `注册生物` 动作，并标记已生效。
+fn mob_commit_instance(inst: &Arc<DicClass>) {
+    let id = mob_str(inst, "品种");
+    if id.is_empty() {
+        return;
+    }
+    let plugin = mob_str(inst, "插件");
+    let mut def = serde_json::Map::new();
+    for (key, _) in MOB_FIELDS {
+        def.insert((*key).to_string(), json!(mob_str(inst, key)));
+    }
+    // 外观是一个对象：`$怪.外观$` 写方式/贴图/偏移/阴影，`$怪.造型$` 写 体/盖 两个盒子，
+    // `$怪.贴图$` 写 uv。三者都只改对象字段，这里统一并成一份 `外观` 下发。
+    let mut look_obj: serde_json::Map<String, serde_json::Value> = inst
+        .local_value
+        .get("外观")
+        .and_then(|v| match v {
+            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                .ok()
+                .and_then(|v| v.as_object().cloned()),
+            _ => None,
+        })
+        .unwrap_or_default();
+    if let Some(NValue::Str(shape)) = inst.local_value.get("造型") {
+        if let Ok(serde_json::Value::Object(map)) = serde_json::from_str::<serde_json::Value>(&shape) {
+            for (part, value) in map {
+                look_obj.insert(part, value);
+            }
+        }
+    }
+    if let Some(NValue::Str(uv)) = inst.local_value.get("UV") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&uv) {
+            look_obj.insert("uv".into(), v);
+        }
+    }
+    if let Some(NValue::Str(mats)) = inst.local_value.get("材质") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&mats) {
+            look_obj.insert("材质".into(), v);
+        }
+    }
+    if let Some(NValue::Str(goals)) = inst.local_value.get("目标") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&goals) {
+            def.insert("目标".into(), v);
+        }
+    }
+    if let Some(NValue::Str(interact)) = inst.local_value.get("交互") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&interact) {
+            def.insert("交互".into(), v);
+        }
+    }
+    if let Some(NValue::Str(drops)) = inst.local_value.get("掉落") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&drops) {
+            def.insert("掉落".into(), v);
+        }
+    }
+    if !look_obj.is_empty() {
+        def.insert("外观".into(), serde_json::Value::Object(look_obj));
+    }
+    if let Some(NValue::Str(anim)) = inst.local_value.get("动画") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&anim) {
+            def.insert("动画".into(), v);
+        }
+    }
+    if let Some(NValue::Str(items)) = inst.local_value.get("物品") {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&items) {
+            def.insert("物品".into(), v);
+        }
+    }
+    let batch = MOB_GENERATION.with(|g| g.get());
+    push_action(json!({
+        "op": "注册生物",
+        "品种": id,
+        "插件": plugin,
+        "定义": def,
+        "批次": batch,
+    }));
+    if let Some(entry) = mobs()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get_mut(&id)
+    {
+        entry.committed = true;
+    }
+}
+
+/// 编译结束时补提交「创建了但忘了 `生效`」的对象。
+fn mob_auto_commit(plugins: &[String], generation: u64) {
+    let pending: Vec<String> = {
+        let map = mobs().lock().unwrap_or_else(|e| e.into_inner());
+        map.iter()
+            .filter(|(_, e)| {
+                e.generation == generation && !e.committed && plugins.iter().any(|p| p == &e.plugin)
+            })
+            .map(|(id, _)| id.clone())
+            .collect()
+    };
+    for id in pending {
+        let inst = mobs()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&id)
+            .map(|e| e.instance.clone());
+        if let Some(inst) = inst {
+            eprintln!("[星云] 注册生物：{id} 未调用 `生效`，已自动提交");
+            mob_commit_instance(&inst);
+        }
+    }
+}
+
+/// 生物对象的 `fn_map`：六方法，所有实例共享同一份。
+fn mob_methods() -> Arc<HashMap<String, NasFunc>> {
+    static CACHE: OnceLock<Arc<HashMap<String, NasFunc>>> = OnceLock::new();
+    CACHE
+        .get_or_init(|| {
+            let mut m: HashMap<String, NasFunc> = HashMap::new();
+
+            // 设 键 值
+            m.insert(
+                "设".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let key = d.string(1);
+                    let value = d.string(2);
+                    match mob_validate(&key, &value) {
+                        Ok(()) => inst.local_value.set(&key, NValue::Str(value)),
+                        Err(e) => mob_error(d, e),
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 外观 方式 方块模型 贴图 [偏移x 偏移y 偏移z] [阴影]
+            m.insert(
+                "外观".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let way = d.string(1);
+                    if way != "方块" {
+                        mob_error(d, format!("外观方式目前只支持「方块」，收到「{way}」"));
+                        return ok_empty();
+                    }
+                    let model = d.string(2);
+                    let texture = d.string(3);
+                    if model.is_empty() || texture.is_empty() {
+                        mob_error(d, "外观 需要：方式 方块模型 贴图");
+                        return ok_empty();
+                    }
+                    let shadow = d.float(7);
+                    let look = json!({
+                        "方式": way,
+                        "方块模型": model,
+                        "贴图": texture,
+                        "偏移": [d.float(4), d.float(5), d.float(6)],
+                        "阴影": if shadow > 0.0 { shadow } else { 0.45 },
+                    });
+                    inst.local_value.set("外观", NValue::Str(look.to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 造型 体|盖 fromx fromy fromz tox toy toz：覆盖默认「箱体 + 盖子」盒子的几何。
+            // 坐标是方块坐标的 1/16 单位（与原版模型 JSON 的 from/to 同一套），0..16，可用小数。
+            m.insert(
+                "造型".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let part = d.string(1);
+                    if part != "体" && part != "盖" {
+                        mob_error(d, format!("造型 第一个参数只能是「体」或「盖」，收到「{part}」"));
+                        return ok_empty();
+                    }
+                    let mut values = [0.0f64; 6];
+                    for (index, slot) in values.iter_mut().enumerate() {
+                        let raw = d.string(index + 2);
+                        if raw.trim().is_empty() {
+                            mob_error(d, "造型 需要 6 个坐标：fromx fromy fromz tox toy toz");
+                            return ok_empty();
+                        }
+                        match raw.trim().parse::<f64>() {
+                            Ok(v) if (0.0..=16.0).contains(&v) => *slot = v,
+                            Ok(v) => {
+                                mob_error(d, format!("造型 坐标必须在 0..16（1/16 格），收到 {v}"));
+                                return ok_empty();
+                            }
+                            Err(_) => {
+                                mob_error(d, format!("造型 坐标必须是数字，收到「{raw}」"));
+                                return ok_empty();
+                            }
+                        }
+                    }
+                    if values[0] > values[3] || values[1] > values[4] || values[2] > values[5] {
+                        mob_error(d, "造型 的 from 不能大于 to（会得到零体积或反向盒子）");
+                        return ok_empty();
+                    }
+                    let mut shape = inst
+                        .local_value
+                        .get("造型")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_object().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    shape.insert(part, json!(values));
+                    inst.local_value.set(
+                        "造型",
+                        NValue::Str(serde_json::Value::Object(shape).to_string()),
+                    );
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 贴图 体|盖 面 u0 v0 u1 v1：覆盖单面 UV。面 = 北/南/东/西/上/下/全部。
+            // 只影响「几何怎么贴图」，贴图文件仍是 `$怪.外观$` 的第 3 参。
+            m.insert(
+                "贴图".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let part = d.string(1);
+                    if part != "体" && part != "盖" {
+                        mob_error(d, format!("贴图 第一个参数只能是「体」或「盖」，收到「{part}」"));
+                        return ok_empty();
+                    }
+                    let face_cn = d.string(2);
+                    let faces: Vec<&str> = match face_cn.as_str() {
+                        "北" => vec!["north"],
+                        "南" => vec!["south"],
+                        "东" => vec!["east"],
+                        "西" => vec!["west"],
+                        "上" => vec!["up"],
+                        "下" => vec!["down"],
+                        "全部" | "全" => vec!["north", "south", "east", "west", "up", "down"],
+                        _ => {
+                            mob_error(
+                                d,
+                                format!("贴图 的「面」只能是 北/南/东/西/上/下/全部，收到「{face_cn}」"),
+                            );
+                            return ok_empty();
+                        }
+                    };
+                    let mut quad = [0.0f64; 4];
+                    for (index, slot) in quad.iter_mut().enumerate() {
+                        let raw = d.string(index + 3);
+                        if raw.trim().is_empty() {
+                            mob_error(d, "贴图 需要 4 个 UV：u0 v0 u1 v1");
+                            return ok_empty();
+                        }
+                        match raw.trim().parse::<f64>() {
+                            Ok(v) if (-32.0..=32.0).contains(&v) => *slot = v,
+                            Ok(v) => {
+                                mob_error(d, format!("贴图 UV 必须在 -32..32，收到 {v}"));
+                                return ok_empty();
+                            }
+                            Err(_) => {
+                                mob_error(d, format!("贴图 UV 必须是数字，收到「{raw}」"));
+                                return ok_empty();
+                            }
+                        }
+                    }
+                    let mut uv = inst
+                        .local_value
+                        .get("UV")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_object().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    let mut part_map = uv
+                        .get(&part)
+                        .and_then(|v| v.as_object().cloned())
+                        .unwrap_or_default();
+                    let material = d.string(7);
+                    let mut entry = serde_json::Map::new();
+                    entry.insert("uv".into(), json!(quad));
+                    if !material.is_empty() {
+                        entry.insert("贴图".into(), json!(material));
+                    }
+                    for face in faces {
+                        part_map.insert(face.to_string(), serde_json::Value::Object(entry.clone()));
+                    }
+                    uv.insert(part, serde_json::Value::Object(part_map));
+                    inst.local_value
+                        .set("UV", NValue::Str(serde_json::Value::Object(uv).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 材质 名字 贴图：额外注册一张贴图，供 `$怪.贴图 … 名字$` 按面引用。
+            // 主贴图（`$怪.外观$` 第 3 参）始终可用，名字是「crate」。
+            m.insert(
+                "材质".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let name = d.string(1);
+                    let texture = d.string(2);
+                    if name.is_empty() || texture.is_empty() {
+                        mob_error(d, "材质 需要：名字 贴图（例：脸 nebula_bridge:block/face）");
+                        return ok_empty();
+                    }
+                    let mut mats = inst
+                        .local_value
+                        .get("材质")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_object().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    mats.insert(name, json!(texture));
+                    inst.local_value.set(
+                        "材质",
+                        NValue::Str(serde_json::Value::Object(mats).to_string()),
+                    );
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 目标 类型 [对象] [数值1] [数值2]：声明 AI 目标（原版 Goal 的参数化装配）。
+            // 注视 玩家 8 / 攻击 玩家 1.0 16 / 逃跑 玩家 8 1.4 / 恐慌 1.2 / 漂浮
+            m.insert(
+                "目标".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let kind = d.string(1);
+                    const KINDS: [&str; 5] = ["注视", "攻击", "逃跑", "恐慌", "漂浮"];
+                    if !KINDS.contains(&kind.as_str()) {
+                        mob_error(
+                            d,
+                            format!("目标 只支持 注视/攻击/逃跑/恐慌/漂浮，收到「{kind}」"),
+                        );
+                        return ok_empty();
+                    }
+                    let mut list: Vec<serde_json::Value> = inst
+                        .local_value
+                        .get("目标")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_array().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    let mut one = serde_json::Map::new();
+                    one.insert("类型".into(), json!(kind));
+                    // 参数位置按类型定：注视/攻击/逃跑 有「对象」，恐慌/漂浮 没有。
+                    // 不能用空串占位（词库会把空实参吞掉，后面的参数直接前移）。
+                    let has_target = matches!(kind.as_str(), "注视" | "攻击" | "逃跑");
+                    if has_target {
+                        let target = d.string(2);
+                        if !target.is_empty() {
+                            one.insert("对象".into(), json!(target));
+                        }
+                    }
+                    let base = if has_target { 3 } else { 2 };
+                    for (index, key) in ["数值1", "数值2"].iter().enumerate() {
+                        let raw = d.string(base + index);
+                        if raw.trim().is_empty() {
+                            continue;
+                        }
+                        match raw.trim().parse::<f64>() {
+                            Ok(n) if n > 0.0 => {
+                                one.insert((*key).to_string(), json!(n));
+                            }
+                            _ => {
+                                mob_error(
+                                    d,
+                                    format!("目标 {kind} 的参数必须是正数，收到「{raw}」"),
+                                );
+                                return ok_empty();
+                            }
+                        }
+                    }
+                    list.push(serde_json::Value::Object(one));
+                    inst.local_value
+                        .set("目标", NValue::Str(json!(list).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 交互 类型 [物品] [数量]：右键这只怪做什么。
+            // 开容器（缺省）/ 无（交还给事件）/ 给予 物品 数量
+            m.insert(
+                "交互".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let kind = d.string(1);
+                    const KINDS: [&str; 3] = ["开容器", "无", "给予"];
+                    if !KINDS.contains(&kind.as_str()) {
+                        mob_error(d, format!("交互 只支持 开容器/无/给予，收到「{kind}」"));
+                        return ok_empty();
+                    }
+                    let mut one = serde_json::Map::new();
+                    one.insert("类型".into(), json!(kind));
+                    if kind == "给予" {
+                        let item = d.string(2);
+                        if item.is_empty() {
+                            mob_error(d, "交互 给予 需要物品 id（例：minecraft:apple）");
+                            return ok_empty();
+                        }
+                        one.insert("物品".into(), json!(item));
+                        let count = d.int(3);
+                        one.insert("数量".into(), json!(if count > 0 { count } else { 1 }));
+                    }
+                    inst.local_value
+                        .set("交互", NValue::Str(serde_json::Value::Object(one).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 掉落 物品 [概率] [数量]：死亡时额外撒的东西（和容器的「死亡掉落」互不影响）。
+            m.insert(
+                "掉落".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let item = d.string(1);
+                    if item.is_empty() {
+                        mob_error(d, "掉落 需要物品 id（例：minecraft:apple）");
+                        return ok_empty();
+                    }
+                    let chance = d.float(2);
+                    let count = d.int(3);
+                    let mut list: Vec<serde_json::Value> = inst
+                        .local_value
+                        .get("掉落")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_array().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    list.push(json!({
+                        "物品": item,
+                        "概率": if chance > 0.0 { chance.min(1.0) } else { 1.0 },
+                        "数量": if count > 0 { count.min(64) } else { 1 },
+                    }));
+                    inst.local_value
+                        .set("掉落", NValue::Str(json!(list).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 加物品 用途 基底 标记 名称 [模型] [贴图] [堆叠] [创造页]
+            m.insert(
+                "加物品".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let use_for = d.string(1);
+                    let base = d.string(2);
+                    let marker = d.string(3);
+                    let name = d.string(4);
+                    if base.is_empty() || marker.is_empty() || name.is_empty() {
+                        mob_error(d, "加物品 需要：用途 基底 标记 名称");
+                        return ok_empty();
+                    }
+                    let mut list: Vec<serde_json::Value> = inst
+                        .local_value
+                        .get("物品")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str(&s).ok(),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    let mut entry = serde_json::Map::new();
+                    entry.insert("用途".into(), json!(use_for));
+                    entry.insert("基底".into(), json!(base));
+                    entry.insert("标记".into(), json!(marker));
+                    entry.insert("名称".into(), json!(name));
+                    let model = d.string(5);
+                    if !model.is_empty() {
+                        entry.insert("模型".into(), json!(model));
+                    }
+                    let texture = d.string(6);
+                    if !texture.is_empty() {
+                        entry.insert("贴图".into(), json!(texture));
+                    }
+                    let stack = d.int(7);
+                    if stack > 0 {
+                        entry.insert("堆叠".into(), json!(stack));
+                    }
+                    let tab = d.string(8);
+                    if !tab.is_empty() {
+                        entry.insert("创造页".into(), json!(tab));
+                    }
+                    let tint = d.string(9);
+                    if !tint.is_empty() {
+                        entry.insert("颜色".into(), json!(tint));
+                    }
+                    list.push(serde_json::Value::Object(entry));
+                    inst.local_value.set("物品", NValue::Str(json!(list).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 动画 键 值：表现参数，全部透传给宿主派生的客户端声明；
+            // 「开合」是唯一的服务端量（开盖速度），其余三个是客户端渲染量。
+            m.insert(
+                "动画".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let key = d.string(1);
+                    let value = d.string(2);
+                    if !matches!(
+                        key.as_str(),
+                        "弹跳" | "前倾" | "开盖" | "开合" | "摇摆" | "缩放" | "旋转" | "浮空"
+                    ) {
+                        mob_error(
+                            d,
+                            format!(
+                                "动画 只支持 弹跳/前倾/开盖/开合/摇摆/缩放/旋转/浮空，收到「{key}」"
+                            ),
+                        );
+                        return ok_empty();
+                    }
+                    let Ok(number) = value.trim().parse::<f64>() else {
+                        mob_error(d, format!("动画 {key} 必须是数字，收到「{value}」"));
+                        return ok_empty();
+                    };
+                    let mut anim: serde_json::Map<String, serde_json::Value> = inst
+                        .local_value
+                        .get("动画")
+                        .and_then(|v| match v {
+                            NValue::Str(s) => serde_json::from_str::<serde_json::Value>(&s)
+                                .ok()
+                                .and_then(|v| v.as_object().cloned()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    anim.insert(key, json!(number));
+                    inst.local_value
+                        .set("动画", NValue::Str(serde_json::Value::Object(anim).to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 生效：提交快照（幂等）
+            m.insert(
+                "生效".into(),
+                hook(|d| {
+                    if let Some(inst) = mob_instance(d) {
+                        mob_commit_instance(&inst);
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 卸载：单品种即时下线
+            m.insert(
+                "卸载".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return ok_empty();
+                    };
+                    let id = mob_str(&inst, "品种");
+                    if !id.is_empty() {
+                        push_action(json!({
+                            "op": "注销生物",
+                            "品种": id,
+                            "批次": MOB_GENERATION.with(|g| g.get()),
+                        }));
+                        mobs().lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 列表 [上限]
+            m.insert(
+                "列表".into(),
+                hook(|d| {
+                    let Some(inst) = mob_instance(d) else {
+                        return Ok(NValue::Str("[]".into()));
+                    };
+                    let id = mob_str(&inst, "品种");
+                    let limit = if d.int(1) > 0 { d.int(1) } else { 64 };
+                    let req = json!({
+                        "op": "取生物列表",
+                        "品种": id,
+                        "上限": limit,
+                    })
+                    .to_string();
+                    Ok(NValue::Str(
+                        java_query(&req).unwrap_or_else(|| "[]".to_string()),
+                    ))
+                }) as NasFunc,
+            );
+
+            Arc::new(m)
+        })
+        .clone()
+}
+
+/// 清掉某插件（或全部插件）的旧代次生物对象：编译成功后调用。
+///
+/// 语义是「本批没声明就下线」：指定插件时只动该插件的条目，其他插件一律保留；
+/// `None`（`loadAll`）时所有插件都必须在本轮重新声明，旧代次全部清掉。
+fn mob_retain(plugin: Option<&str>, generation: u64) {
+    let mut removed: Vec<String> = Vec::new();
+    {
+        let mut map = mobs().lock().unwrap_or_else(|e| e.into_inner());
+        map.retain(|id, entry| {
+            let in_scope = match plugin {
+                Some(name) => entry.plugin == name,
+                None => true,
+            };
+            let keep = !in_scope || entry.generation == generation;
+            if !keep {
+                removed.push(id.clone());
+            }
+            keep
+        });
+    }
+    // Rust 侧清掉还不够：宿主 `MobRegistry` 也有一份。逐个发注销动作，
+    // 否则重新 load 删掉定义 / unload 之后，服务端的品种表与资源包都会残留。
+    for id in removed {
+        push_action(json!({
+            "op": "注销生物",
+            "品种": id,
+            "批次": MOB_GENERATION.with(|g| g.get()),
+        }));
+    }
+}
+
+// ────────────────────────────── 物品对象 ──────────────────────────────
+//
+// `$世界.注册物品 <id>$` 返回一个有状态对象，宿主按它派生资源包条目（item definition /
+// 模型 / 创造页）并在 `给物品` 时构造带组件的 ItemStack。和生物对象同一套机制：
+// `self_class()` 取自己、`local_value` 存字段、`生效` 才把快照推给宿主。
+
+/// 注册表里的一件物品。`generation` 与生物共用同一编译轮次标号。
+struct ItemEntry {
+    plugin: String,
+    instance: Arc<DicClass>,
+    committed: bool,
+    generation: u64,
+}
+
+static ITEMS: OnceLock<Mutex<BTreeMap<String, ItemEntry>>> = OnceLock::new();
+
+fn items() -> &'static Mutex<BTreeMap<String, ItemEntry>> {
+    ITEMS.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+/// 字段白名单（顺序即 `生效` 打包顺序）。`模型` 由 `$剑.外观$` 写，不对外开放。
+const ITEM_FIELDS: &[(&str, &str)] = &[
+    ("名称", ""),
+    ("基底", "minecraft:paper"),
+    ("颜色", "white"),
+    ("稀有度", "common"),
+    ("堆叠", "1"),
+    ("耐久", "0"),
+    ("创造页", ""),
+    ("标记", ""),
+    ("模型", ""),
+];
+
+const ITEM_FIELD_NAMES: &str = "名称/基底/颜色/稀有度/堆叠/耐久/创造页/标记";
+
+fn item_instance(d: &DicInputs) -> Option<Arc<DicClass>> {
+    d.v.scope.self_class()
+}
+
+fn item_str(inst: &DicClass, key: &str) -> String {
+    match inst.local_value.get(key) {
+        Some(NValue::Str(s)) => s,
+        Some(other) => any_to_string(&other),
+        None => String::new(),
+    }
+}
+
+fn item_error(d: &mut DicInputs, text: impl Into<String>) {
+    d.v.scope.set("报错", NValue::Str(text.into()));
+}
+
+fn item_validate(key: &str, value: &str) -> Result<(), String> {
+    match key {
+        "物品" | "模型" => Err(format!("{key} 由宿主维护，不能直接设")),
+        "名称" | "基底" | "颜色" | "稀有度" | "创造页" | "标记" => Ok(()),
+        "堆叠" => value
+            .trim()
+            .parse::<i64>()
+            .map_err(|_| format!("堆叠 必须是整数，收到「{value}」"))
+            .and_then(|n| {
+                if (1..=99).contains(&n) {
+                    Ok(())
+                } else {
+                    Err(format!("堆叠 必须在 1..=99，收到 {n}"))
+                }
+            }),
+        "耐久" => value
+            .trim()
+            .parse::<i64>()
+            .map_err(|_| format!("耐久 必须是整数，收到「{value}」"))
+            .and_then(|n| {
+                if (0..=100_000).contains(&n) {
+                    Ok(())
+                } else {
+                    Err(format!("耐久 必须在 0..=100000，收到 {n}"))
+                }
+            }),
+        _ => Err(format!("未知字段「{key}」，可用：{ITEM_FIELD_NAMES}")),
+    }
+}
+
+/// 取一个累加型字段（`描述` / `属性`）的 JSON 数组，解析失败就从空开始。
+fn item_list(inst: &DicClass, key: &str) -> Vec<serde_json::Value> {
+    inst.local_value
+        .get(key)
+        .and_then(|v| match v {
+            NValue::Str(s) => serde_json::from_str(&s).ok(),
+            _ => None,
+        })
+        .unwrap_or_default()
+}
+
+fn item_push(inst: &DicClass, key: &str, entry: serde_json::Value) {
+    let mut list = item_list(inst, key);
+    list.push(entry);
+    inst.local_value.set(key, NValue::Str(json!(list).to_string()));
+}
+
+/// 把对象当前字段打包成一条 `注册物品` 动作，并标记已生效。
+fn item_commit_instance(inst: &Arc<DicClass>) {
+    let id = item_str(inst, "物品");
+    if id.is_empty() {
+        return;
+    }
+    let plugin = item_str(inst, "插件");
+    let mut def = serde_json::Map::new();
+    for (key, _) in ITEM_FIELDS {
+        def.insert((*key).to_string(), json!(item_str(inst, key)));
+    }
+    for extra in ["描述", "属性", "食物"] {
+        if let Some(NValue::Str(s)) = inst.local_value.get(extra) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&s) {
+                def.insert(extra.into(), v);
+            }
+        }
+    }
+    let batch = MOB_GENERATION.with(|g| g.get());
+    push_action(json!({
+        "op": "注册物品",
+        "物品": id,
+        "插件": plugin,
+        "定义": def,
+        "批次": batch,
+    }));
+    if let Some(entry) = items()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get_mut(&id)
+    {
+        entry.committed = true;
+    }
+}
+
+/// 编译结束时补提交「创建了但忘了 `生效`」的物品对象。
+fn item_auto_commit(plugins: &[String], generation: u64) {
+    let pending: Vec<String> = {
+        let map = items().lock().unwrap_or_else(|e| e.into_inner());
+        map.iter()
+            .filter(|(_, e)| {
+                e.generation == generation && !e.committed && plugins.iter().any(|p| p == &e.plugin)
+            })
+            .map(|(id, _)| id.clone())
+            .collect()
+    };
+    for id in pending {
+        let inst = items()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&id)
+            .map(|e| e.instance.clone());
+        if let Some(inst) = inst {
+            eprintln!("[星云] 注册物品：{id} 未调用 `生效`，已自动提交");
+            item_commit_instance(&inst);
+        }
+    }
+}
+
+/// 清掉某插件（或全部插件）的旧代次物品对象，并让宿主同步下线。
+fn item_retain(plugin: Option<&str>, generation: u64) {
+    let mut removed: Vec<String> = Vec::new();
+    {
+        let mut map = items().lock().unwrap_or_else(|e| e.into_inner());
+        map.retain(|id, entry| {
+            let in_scope = match plugin {
+                Some(name) => entry.plugin == name,
+                None => true,
+            };
+            let keep = !in_scope || entry.generation == generation;
+            if !keep {
+                removed.push(id.clone());
+            }
+            keep
+        });
+    }
+    for id in removed {
+        push_action(json!({
+            "op": "注销物品",
+            "物品": id,
+            "批次": MOB_GENERATION.with(|g| g.get()),
+        }));
+    }
+}
+
+/// 物品对象的 `fn_map`：七个方法，所有实例共享同一份。
+fn item_methods() -> Arc<HashMap<String, NasFunc>> {
+    static CACHE: OnceLock<Arc<HashMap<String, NasFunc>>> = OnceLock::new();
+    CACHE
+        .get_or_init(|| {
+            let mut m: HashMap<String, NasFunc> = HashMap::new();
+
+            // 载入 <配置JSON文本> —— 批量设字段；文本一般由词库 `$读文件$` 读进来
+            m.insert(
+                "载入".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let text = d.string(1);
+                    if text.trim().is_empty() {
+                        item_error(d, "载入 需要：配置 JSON 文本（通常来自 $读文件$）");
+                        return ok_empty();
+                    }
+                    if let Err(e) = apply_item_def(&inst, &text) {
+                        item_error(d, e);
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 设 键 值
+            m.insert(
+                "设".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let key = d.string(1);
+                    let value = d.string(2);
+                    match item_validate(&key, &value) {
+                        Ok(()) => inst.local_value.set(&key, NValue::Str(value)),
+                        Err(e) => item_error(d, e),
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 外观 贴图名 —— 派生 item definition / 模型，贴图取 资源/物品材质/<名>.png
+            m.insert(
+                "外观".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let raw = d.string(1).trim().to_string();
+                    if raw.is_empty() {
+                        item_error(d, "外观 需要：贴图名（可只写名字，也可写 nebula:item/xxx）");
+                        return ok_empty();
+                    }
+                    let model = if raw.contains(':') {
+                        raw.clone()
+                    } else {
+                        format!("nebula:item/{raw}")
+                    };
+                    let leaf = model.rsplit('/').next().unwrap_or(&model).to_string();
+                    inst.local_value.set("模型", NValue::Str(model));
+                    if item_str(&inst, "标记").is_empty() {
+                        inst.local_value.set("标记", NValue::Str(leaf));
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 加描述 文本 [颜色]
+            m.insert(
+                "加描述".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let text = d.string(1);
+                    if text.is_empty() {
+                        item_error(d, "加描述 需要：文本 [颜色]");
+                        return ok_empty();
+                    }
+                    let mut entry = serde_json::Map::new();
+                    entry.insert("文本".into(), json!(text));
+                    let color = d.string(2);
+                    if !color.is_empty() {
+                        entry.insert("颜色".into(), json!(color));
+                    }
+                    item_push(&inst, "描述", serde_json::Value::Object(entry));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 加属性 属性id 数值 [运算] [槽位]
+            m.insert(
+                "加属性".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let attribute = d.string(1);
+                    let amount = d.float(2);
+                    if attribute.is_empty() || amount == 0.0 {
+                        item_error(d, "加属性 需要：属性id 非零数值 [运算] [槽位]");
+                        return ok_empty();
+                    }
+                    let operation = {
+                        let v = d.string(3);
+                        if v.is_empty() {
+                            "add_value".to_string()
+                        } else {
+                            v
+                        }
+                    };
+                    if !matches!(
+                        operation.as_str(),
+                        "add_value" | "add_multiplied_base" | "add_multiplied_total"
+                    ) {
+                        item_error(
+                            d,
+                            format!(
+                                "运算 只能是 add_value/add_multiplied_base/add_multiplied_total，收到「{operation}」"
+                            ),
+                        );
+                        return ok_empty();
+                    }
+                    let slot = {
+                        let v = d.string(4);
+                        if v.is_empty() {
+                            "mainhand".to_string()
+                        } else {
+                            v
+                        }
+                    };
+                    let known = item_list(&inst, "属性").len();
+                    let marker = {
+                        let m = item_str(&inst, "标记");
+                        if m.is_empty() {
+                            item_str(&inst, "物品")
+                        } else {
+                            m
+                        }
+                    };
+                    let mut entry = serde_json::Map::new();
+                    entry.insert("属性".into(), json!(attribute));
+                    entry.insert("数值".into(), json!(amount));
+                    entry.insert("运算".into(), json!(operation));
+                    entry.insert("槽位".into(), json!(slot));
+                    entry.insert("id".into(), json!(format!("nebula:{marker}_{known}")));
+                    item_push(&inst, "属性", serde_json::Value::Object(entry));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 加食物 饥饿 [饱和] [总能吃]
+            m.insert(
+                "加食物".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let hunger = d.int(1);
+                    if hunger <= 0 {
+                        item_error(d, "加食物 需要：饥饿值(>0) [饱和] [总能吃 是/否]");
+                        return ok_empty();
+                    }
+                    let always = matches!(d.string(3).as_str(), "是" | "true");
+                    let food = json!({
+                        "饥饿": hunger,
+                        "饱和": d.float(2),
+                        "总能吃": always,
+                    });
+                    inst.local_value.set("食物", NValue::Str(food.to_string()));
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 生效：提交快照（幂等）
+            m.insert(
+                "生效".into(),
+                hook(|d| {
+                    if let Some(inst) = item_instance(d) {
+                        item_commit_instance(&inst);
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            // 卸载：单件物品即时下线
+            m.insert(
+                "卸载".into(),
+                hook(|d| {
+                    let Some(inst) = item_instance(d) else {
+                        return ok_empty();
+                    };
+                    let id = item_str(&inst, "物品");
+                    if !id.is_empty() {
+                        push_action(json!({
+                            "op": "注销物品",
+                            "物品": id,
+                            "批次": MOB_GENERATION.with(|g| g.get()),
+                        }));
+                        items().lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+                    }
+                    ok_empty()
+                }) as NasFunc,
+            );
+
+            Arc::new(m)
+        })
+        .clone()
+}
+
+/// 把一份物品配置（JSON 文本）写进对象：词库负责读文件，这里只负责解析与设值。
+///
+/// 规范化三件事：`外观` 翻成 `模型` + `标记`（缺省）；`属性` 缺 `id` 时按 `<标记>_<序号>` 补；
+/// `物品` / `外观` 这两个只在这里用到的键不进对象字段。
+fn apply_item_def(inst: &Arc<DicClass>, text: &str) -> Result<(), String> {
+    let parsed: serde_json::Value =
+        serde_json::from_str(text).map_err(|e| format!("配置 JSON 解析失败（{e}）"))?;
+    let Some(object) = parsed.as_object() else {
+        return Err("配置顶层必须是对象".to_string());
+    };
+    let id = item_str(inst, "物品");
+    let mut def = object.clone();
+
+    if let Some(appearance) = object.get("外观").and_then(|v| v.as_str()) {
+        let appearance = appearance.trim();
+        if !appearance.is_empty() {
+            let model = if appearance.contains(':') {
+                appearance.to_string()
+            } else {
+                format!("nebula:item/{appearance}")
+            };
+            let leaf = model.rsplit('/').next().unwrap_or(&model).to_string();
+            def.insert("模型".into(), json!(model));
+            if !object.contains_key("标记") {
+                def.insert("标记".into(), json!(leaf));
+            }
+        }
+    }
+    def.remove("外观");
+
+    let marker = def
+        .get("标记")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .or_else(|| {
+            def.get("模型")
+                .and_then(|v| v.as_str())
+                .and_then(|m| m.rsplit('/').next())
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| id.rsplit(':').next().unwrap_or("item").to_string());
+    if let Some(attrs) = def.get_mut("属性").and_then(|v| v.as_array_mut()) {
+        for (index, one) in attrs.iter_mut().enumerate() {
+            if let Some(attr) = one.as_object_mut() {
+                if !attr.contains_key("id") {
+                    attr.insert("id".into(), json!(format!("nebula:{marker}_{index}")));
+                }
+            }
+        }
+    }
+    def.remove("物品");
+
+    for (key, _) in ITEM_FIELDS {
+        if let Some(v) = def.get(*key) {
+            let text = match v {
+                serde_json::Value::String(s) => s.clone(),
+                other => other.to_string(),
+            };
+            inst.local_value.set(*key, NValue::Str(text));
+        }
+    }
+    for extra in ["描述", "属性", "食物"] {
+        if let Some(v) = def.get(extra) {
+            inst.local_value.set(extra, NValue::Str(v.to_string()));
+        }
+    }
+    Ok(())
 }
 
 fn begin_call() {
@@ -163,6 +1424,20 @@ fn clean_command(raw: &str) -> Option<String> {
     Some(name.to_string())
 }
 
+/// `参数=帮助,余额` 的值：按常见分隔符切开，逐个过 [`clean_command`]（含空白即丢弃）。
+///
+/// 只认逗号类分隔符，**不认空格** —— 词库里空格就是实参边界，若在这里认空格，
+/// `参数=帮助 余额` 会先把 `余额` 当别的实参，反而漏掉。
+fn push_sub_names(raw: &str, out: &mut Vec<String>) {
+    for part in raw.split([',', '，', '、', '|', '／']) {
+        if let Some(name) = clean_command(part) {
+            if !out.contains(&name) {
+                out.push(name);
+            }
+        }
+    }
+}
+
 /// `取相邻方块 维度 X Y Z [预算]` → 宿主查询请求 JSON。
 fn neighbor_request(d: &DicInputs) -> Option<String> {
     let dim = d.string(1);
@@ -186,13 +1461,14 @@ fn neighbor_request(d: &DicInputs) -> Option<String> {
     )
 }
 
-// ────────────────────── 表驱动 mc 方法（映射表批量落地） ──────────────────────
+// ────────────────────── 表驱动 mc 方法（规格来自 Java 侧唯一来源） ──────────────────────
 //
-// mod/docs/mc-api-map.md 里每个方法都有固定的参数位次。这里把它声明成一张规格表：
-// 查询类 → 构造请求 JSON 同步回调 Java McApi.query；动作类 → 压入动作队列，
-// 由宿主在服务端主线程落地。宿主侧的 op 名与方法名一致，避免两边各维护一份别名。
+// 方法清单、参数位次 / 类型 / 尾参默认值全部在
+// NebulaLoadMod/src/main/resources/nebula/world-specs.json 里维护。本层只把这份数据翻译成
+// 引擎的注入类函数：查询类构造请求 JSON 同步回调 Java McApi.query，动作类压入动作队列。
+// 宿主侧的 op 名与方法名一致，避免两边各维护一份别名。
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum ArgKind {
     Str,
     Int,
@@ -202,40 +1478,113 @@ enum ArgKind {
     Player,
 }
 
-#[derive(Clone, Copy)]
+impl ArgKind {
+    fn parse(raw: &str) -> Result<Self, String> {
+        Ok(match raw {
+            "Str" => Self::Str,
+            "Int" => Self::Int,
+            "Float" => Self::Float,
+            "Bool" => Self::Bool,
+            "Text" => Self::Text,
+            "Player" => Self::Player,
+            _ => return Err(format!("未知参数类型 {raw}")),
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
 struct Field {
-    key: &'static str,
+    key: String,
     at: usize,
     kind: ArgKind,
     /// 仅尾部参数可设：实参不足时用这个默认值，而不是 d.int() 返回的 0。
-    default: Option<&'static str>,
+    default: Option<String>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug)]
 struct Spec {
-    name: &'static str,
+    name: String,
     query: bool,
     /// 查询失败（世界未就绪 / 宿主不支持）时的回退值。
-    fallback: &'static str,
-    fields: &'static [Field],
+    fallback: String,
+    fields: Vec<Field>,
 }
 
-macro_rules! f {
-    ($k:literal, $i:literal, $t:ident) => {
-        Field { key: $k, at: $i, kind: ArgKind::$t, default: None }
-    };
+/// 编译期副本只用于单测与「create 没带规格」的兜底；生产路径由 Java 传入的 JSON 覆盖。
+const EMBEDDED_SPECS: &str =
+    include_str!("../../NebulaLoadMod/src/main/resources/nebula/world-specs.json");
+static WORLD_SPECS: OnceLock<Vec<Spec>> = OnceLock::new();
+
+fn parse_specs(json: &str) -> Result<Vec<Spec>, String> {
+    let root: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("world-specs.json 解析失败: {e}"))?;
+    let methods = root
+        .get("methods")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "world-specs.json 缺少 methods 数组".to_string())?;
+    let mut specs = Vec::with_capacity(methods.len());
+    for (i, raw) in methods.iter().enumerate() {
+        let name = raw
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| format!("第 {i} 条规格缺少 name"))?
+            .to_string();
+        let fields = raw
+            .get("fields")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let mut parsed_fields = Vec::with_capacity(fields.len());
+        for (j, f) in fields.iter().enumerate() {
+            let key = f
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| format!("{name} 第 {j} 个字段缺少 key"))?
+                .to_string();
+            let at = f
+                .get("at")
+                .and_then(|v| v.as_u64())
+                .ok_or_else(|| format!("{name}/{key} 缺少 at"))? as usize;
+            let kind = ArgKind::parse(
+                f.get("kind")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| format!("{name}/{key} 缺少 kind"))?,
+            )?;
+            let default = f.get("default").and_then(|v| v.as_str()).map(str::to_string);
+            parsed_fields.push(Field { key, at, kind, default });
+        }
+        specs.push(Spec {
+            name,
+            query: raw.get("query").and_then(|v| v.as_bool()).unwrap_or(false),
+            fallback: raw
+                .get("fallback")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            fields: parsed_fields,
+        });
+    }
+    Ok(specs)
 }
 
-/// Field with a default. Only safe for trailing parameters: omitting a middle
-/// argument would shift every later positional argument.
-macro_rules! fd {
-    ($k:literal, $i:literal, $t:ident, $d:literal) => {
-        Field { key: $k, at: $i, kind: ArgKind::$t, default: Some($d) }
-    };
+/// create 时把 jar 内的规格装进来；重复调用（热重启）直接复用第一份。
+fn init_world_specs(json: &str) -> Result<(), String> {
+    if json.trim().is_empty() {
+        return Ok(());
+    }
+    let specs = parse_specs(json)?;
+    let _ = WORLD_SPECS.set(specs);
+    Ok(())
+}
+
+fn world_specs() -> &'static [Spec] {
+    WORLD_SPECS
+        .get_or_init(|| parse_specs(EMBEDDED_SPECS).expect("内置 world-specs.json 无效"))
+        .as_slice()
 }
 
 fn default_value(field: &Field) -> serde_json::Value {
-    let raw = field.default.unwrap_or("");
+    let raw = field.default.as_deref().unwrap_or("");
     match field.kind {
         ArgKind::Int => json!(raw.parse::<i64>().unwrap_or(0)),
         ArgKind::Float => json!(raw.parse::<f64>().unwrap_or(0.0)),
@@ -244,168 +1593,40 @@ fn default_value(field: &Field) -> serde_json::Value {
     }
 }
 
-macro_rules! q {
-    ($n:literal, $d:literal $(, $field:expr)* $(,)?) => {
-        Spec { name: $n, query: true, fallback: $d, fields: &[$($field),*] }
-    };
-}
-
-macro_rules! a {
-    ($n:literal $(, $field:expr)* $(,)?) => {
-        Spec { name: $n, query: false, fallback: "", fields: &[$($field),*] }
-    };
-}
-
-/// 按规格把词库实参拼成请求 / 动作 JSON。参数位次与 mod/docs/mc-api-map.md 的参数列一致。
+/// 按规格把词库实参拼成请求 / 动作 JSON。参数位次与 NebulaLoadMod/docs/mc-api-map.md 的参数列一致。
 fn build_request(spec: &Spec, d: &mut DicInputs) -> serde_json::Value {
     let mut obj = serde_json::Map::new();
     obj.insert("op".into(), json!(spec.name));
-    for field in spec.fields {
+    for field in &spec.fields {
         let missing = d.inputs.len() < field.at;
         let value = if missing && field.default.is_some() {
             default_value(field)
         } else {
             match field.kind {
-            ArgKind::Str => json!(d.string(field.at)),
-            ArgKind::Int => json!(d.int(field.at)),
-            ArgKind::Float => json!(d.float(field.at)),
-            ArgKind::Bool => json!(matches!(
-                d.string(field.at).as_str(),
-                "是" | "true" | "1" | "开" | "真" | "yes" | "on"
-            )),
-            ArgKind::Text => json!(d.inputs.string_after(field.at)),
-            ArgKind::Player => json!(player_name(&d.string(field.at))),
+                ArgKind::Str => json!(d.string(field.at)),
+                ArgKind::Int => json!(d.int(field.at)),
+                ArgKind::Float => json!(d.float(field.at)),
+                ArgKind::Bool => json!(matches!(
+                    d.string(field.at).as_str(),
+                    "是" | "true" | "1" | "开" | "真" | "yes" | "on"
+                )),
+                ArgKind::Text => json!(d.inputs.string_after(field.at)),
+                ArgKind::Player => json!(player_name(&d.string(field.at))),
             }
         };
-        obj.insert(field.key.into(), value);
+        obj.insert(field.key.clone(), value);
     }
     serde_json::Value::Object(obj)
 }
 
-fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
-    let specs: Vec<Spec> = vec![
-        // 1. 方块
-        q!("取方块", "", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
-        q!("取方块数据", "", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
-        q!("获取方块", "{}", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
-        q!("取方块标签", "[]", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
-        a!("设方块", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("方块", 5, Str)),
-        a!("设方块状态", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("名称", 5, Str), fd!("状态", 6, Text, "")),
-        a!("设方块数据", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int), f!("数据", 5, Text)),
-        q!("取生物群系", "", f!("维度", 1, Str), f!("x", 2, Int), f!("y", 3, Int), f!("z", 4, Int)),
-        a!("设生物群系", f!("维度", 1, Str), f!("x1", 2, Int), f!("z1", 3, Int), f!("x2", 4, Int), f!("z2", 5, Int), f!("群系", 6, Str)),
-        a!("填充区域", f!("维度", 1, Str), f!("x1", 2, Int), f!("y1", 3, Int), f!("z1", 4, Int), f!("x2", 5, Int), f!("y2", 6, Int), f!("z2", 7, Int), f!("方块", 8, Str)),
-        // 2. 坐标
-        q!("取玩家坐标", "{}", f!("玩家", 1, Player)),
-        q!("取复活点坐标", "{}"),
-        a!("设复活点", f!("x", 1, Int), f!("y", 2, Int), f!("z", 3, Int)),
-        // 3. 玩家
-        q!("取玩家状态", "{}", f!("玩家", 1, Player)),
-        q!("取玩家列表", "[]"),
-        q!("取玩家数量", "0"),
-        a!("传送玩家", f!("玩家", 1, Player), f!("维度", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("设置模式", f!("模式", 1, Str), f!("玩家", 2, Player)),
-        q!("取玩家模式", "", f!("玩家", 1, Player)),
-        q!("取玩家血量", "0", f!("玩家", 1, Player)),
-        a!("治疗玩家", f!("玩家", 1, Player), fd!("数值", 2, Float, "1")),
-        a!("伤害玩家", f!("玩家", 1, Player), fd!("数值", 2, Float, "1")),
-        a!("击杀玩家", f!("玩家", 1, Player)),
-        a!("踢出玩家", f!("玩家", 1, Player), fd!("原因", 2, Text, "")),
-        a!("设置侧边栏", f!("玩家", 1, Player), f!("文本", 2, Text)),
-        a!("清除侧边栏", f!("玩家", 1, Player)),
-        a!("设置等级", f!("玩家", 1, Player), fd!("数值", 2, Int, "0")),
-        a!("加等级", f!("玩家", 1, Player), fd!("数值", 2, Int, "1")),
-        a!("加经验", f!("玩家", 1, Player), fd!("数值", 2, Int, "1")),
-        a!("设置经验进度", f!("玩家", 1, Player), fd!("数值", 2, Float, "0")),
-        a!("设置饥饿", f!("玩家", 1, Player), fd!("数值", 2, Int, "20")),
-        a!("设置饱和度", f!("玩家", 1, Player), fd!("数值", 2, Float, "5")),
-        a!("设置消耗度", f!("玩家", 1, Player), fd!("数值", 2, Float, "0")),
-        q!("取玩家权限", "0", f!("玩家", 1, Player)),
-        a!("设置权限", f!("玩家", 1, Player), fd!("等级", 2, Int, "0")),
-        a!("给予物品", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
-        a!("丢弃物品", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
-        q!("取手持物品", "{}", f!("玩家", 1, Player)),
-        q!("取背包物品", "{}", f!("玩家", 1, Player), f!("槽位", 2, Int)),
-        a!("设背包物品", f!("玩家", 1, Player), f!("槽位", 2, Int), f!("物品", 3, Str), fd!("数量", 4, Int, "1")),
-        a!("清空背包", f!("玩家", 1, Player)),
-        q!("取副手物品", "{}", f!("玩家", 1, Player)),
-        a!("设置副手", f!("玩家", 1, Player), f!("物品", 2, Str), fd!("数量", 3, Int, "1")),
-        q!("取装备", "[]", f!("玩家", 1, Player)),
-        a!("加效果", f!("玩家", 1, Player), f!("效果", 2, Str), fd!("秒", 3, Int, "30"), fd!("等级", 4, Int, "1")),
-        a!("移除效果", f!("玩家", 1, Player), f!("效果", 2, Str)),
-        a!("设置能力", f!("玩家", 1, Player), f!("能力", 2, Str), fd!("值", 3, Bool, "是")),
-        a!("设置飞行", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
-        a!("设置无敌", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
-        a!("设置隐身", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
-        a!("设置名牌", f!("玩家", 1, Player), f!("文本", 2, Text)),
-        a!("设置名牌可见", f!("玩家", 1, Player), fd!("值", 2, Bool, "是")),
-        a!("玩家加标签", f!("玩家", 1, Player), f!("标签", 2, Str)),
-        a!("玩家移除标签", f!("玩家", 1, Player), f!("标签", 2, Str)),
-        q!("玩家有标签", "否", f!("玩家", 1, Player), f!("标签", 2, Str)),
-        a!("设置玩家出生点", f!("玩家", 1, Player), f!("维度", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("设置区块半径", f!("玩家", 1, Player), fd!("数值", 2, Int, "8")),
-        a!("重发区块", f!("玩家", 1, Player), fd!("数值", 2, Int, "0")),
-        a!("打开背包", f!("玩家", 1, Player)),
-        a!("播放动作", f!("玩家", 1, Player), f!("动作", 2, Str)),
-        a!("骑乘", f!("玩家", 1, Player), f!("实体", 2, Str)),
-        a!("取消骑乘", f!("玩家", 1, Player)),
-        a!("攻击", f!("玩家", 1, Player), f!("实体", 2, Str)),
-        a!("交互", f!("玩家", 1, Player), f!("实体", 2, Str)),
-        // 4. 世界 / 服务器
-        q!("取时间", "0"),
-        a!("设时间", f!("时刻", 1, Int)),
-        a!("设天气", f!("天气", 1, Str)),
-        a!("更新天气", f!("数值", 1, Int)),
-        q!("取难度", ""),
-        a!("设难度", f!("难度", 1, Str)),
-        q!("取种子", "0"),
-        q!("取游戏规则", "", f!("名称", 1, Str)),
-        a!("设游戏规则", f!("名称", 1, Str), f!("值", 2, Str)),
-        a!("保存世界"),
-        q!("取睡眠状态", "否"),
-        q!("区块已加载", "否", f!("维度", 1, Str), f!("x", 2, Int), f!("z", 3, Int)),
-        q!("取TPS", "0"),
-        q!("取MSPT", "0"),
-        q!("取服务器tick", "0"),
-        q!("取协议版本", "0"),
-        q!("取服务器版本", ""),
-        q!("取环境变量", "", f!("名称", 1, Str)),
-        a!("设环境变量", f!("名称", 1, Str), f!("值", 2, Text)),
-        q!("取本地时间", ""),
-        // 需 Mixin 的四项：注册占位，宿主明确回报「不支持」，而不是让词库报「未知方法」。
-        a!("设置tick冻结", f!("值", 1, Bool)),
-        a!("步进tick", f!("数值", 1, Int)),
-        a!("设置tick加速", f!("数值", 1, Float)),
-        q!("取模拟暂停", "否"),
-        // 5. 实体
-        a!("生成生物", f!("维度", 1, Str), f!("类型", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("生成实体", f!("维度", 1, Str), f!("类型", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int), fd!("数据", 6, Text, "")),
-        a!("生成粒子", f!("维度", 1, Str), f!("效果", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        q!("取实体列表", "[]", f!("维度", 1, Str), fd!("上限", 2, Int, "512")),
-        q!("取实体坐标", "{}", f!("实体", 1, Str)),
-        q!("取实体数据", "{}", f!("实体", 1, Str)),
-        a!("实体传送", f!("实体", 1, Str), f!("维度", 2, Str), f!("x", 3, Int), f!("y", 4, Int), f!("z", 5, Int)),
-        a!("实体伤害", f!("实体", 1, Str), fd!("数值", 2, Float, "1")),
-        a!("实体治疗", f!("实体", 1, Str), fd!("数值", 2, Float, "1")),
-        a!("实体击杀", f!("实体", 1, Str)),
-        a!("实体移除", f!("实体", 1, Str)),
-        a!("实体加标签", f!("实体", 1, Str), f!("标签", 2, Str)),
-        a!("实体移除标签", f!("实体", 1, Str), f!("标签", 2, Str)),
-        q!("实体有标签", "否", f!("实体", 1, Str), f!("标签", 2, Str)),
-        q!("取实体属性", "", f!("实体", 1, Str), f!("属性", 2, Str)),
-        a!("实体隐身", f!("实体", 1, Str), fd!("值", 2, Bool, "是")),
-        // 6.1b 原版 dialog（1.21.6+）：文本输入框 + dynamic/run_command 模板
-        a!("弹窗输入", f!("玩家", 1, Player), f!("标题", 2, Str), f!("提示", 3, Str), f!("标签", 4, Str), f!("最长", 5, Int), f!("提交指令", 6, Str)),
-        // 6.2 显示特效
-        a!("悬浮字", f!("维度", 1, Str), f!("x", 2, Float), f!("y", 3, Float), f!("z", 4, Float), f!("文本", 5, Str), fd!("缩放", 6, Float, "1"), fd!("上升", 7, Float, "1"), fd!("时长", 8, Int, "20")),
-    ];
-
+fn register_table_driven(m: &mut HashMap<String, NasFunc>, specs: &[Spec]) {
     for spec in specs {
-        let name = spec.name.to_string();
+        let spec = spec.clone();
+        let name = spec.name.clone();
         let method: NasFunc = if spec.query {
             hook(move |d| {
                 let req = build_request(&spec, d).to_string();
-                let out = java_query(&req).unwrap_or_else(|| spec.fallback.to_string());
+                let out = java_query(&req).unwrap_or_else(|| spec.fallback.clone());
                 Ok(NValue::Str(out))
             })
         } else {
@@ -414,7 +1635,10 @@ fn register_table_driven(m: &mut HashMap<String, NasFunc>) {
                 ok_empty()
             })
         };
-        m.insert(name, method);
+        // P0-1：手写 hook 优先。以前是无条件 `insert`，只是因为规格表里恰好没有同名条目
+        // 才没出事；一旦有人往 world-specs.json 加了 `注册生物` 这类名字，手写实现会被
+        // 静默换成表驱动空壳。`or_insert` 让「先注册的赢」成为可依赖的约定。
+        m.entry(name).or_insert(method);
     }
 }
 
@@ -843,7 +2067,7 @@ fn mc_methods() -> HashMap<String, NasFunc> {
         }) as NasFunc,
     );
 
-    // 注册指令 指令 [权限] 别名…（权限为单个 0~4 数字；不写默认 0）
+    // 注册指令 指令 [权限] 别名… [参数=值,值…]（权限为单个 0~4 数字；不写默认 0）
     m.insert(
         "注册指令".into(),
         hook(|d| {
@@ -858,10 +2082,31 @@ fn mc_methods() -> HashMap<String, NasFunc> {
                 index = 3;
             }
             let mut aliases: Vec<String> = Vec::new();
+            let mut subs: Vec<String> = Vec::new();
+            // `参数=` 之后一律算子参数：宿主把它注册成 Brigadier 的 literal 子节点，
+            // 客户端 Tab 才看得见「/商店 帮助」「/商店 余额」。写成别名会被当成根指令。
+            let mut in_subs = false;
             for i in index..=d.inputs.len() {
-                if let Some(name) = clean_command(&d.string(i)) {
-                    if name != command && !aliases.contains(&name) {
-                        aliases.push(name);
+                let raw = d.string(i);
+                let raw = raw.trim();
+                if raw.is_empty() {
+                    continue;
+                }
+                let head = raw
+                    .strip_prefix("参数=")
+                    .or_else(|| raw.strip_prefix("参数＝"));
+                match head {
+                    Some(rest) => {
+                        in_subs = true;
+                        push_sub_names(rest, &mut subs);
+                    }
+                    None if in_subs => push_sub_names(raw, &mut subs),
+                    None => {
+                        if let Some(name) = clean_command(raw) {
+                            if name != command && !aliases.contains(&name) {
+                                aliases.push(name);
+                            }
+                        }
                     }
                 }
             }
@@ -869,6 +2114,7 @@ fn mc_methods() -> HashMap<String, NasFunc> {
                 "op": "注册指令",
                 "指令": command,
                 "别名": aliases,
+                "子参数": subs,
                 "权限": permission,
             }));
             ok_empty()
@@ -908,9 +2154,131 @@ fn mc_methods() -> HashMap<String, NasFunc> {
         }) as NasFunc,
     );
 
+    // 注册生物 品种 → 返回生物对象（`Value::Class`）。
+    // 字段与方法都挂在对象上：`$怪.设 血量 20$` / `%怪.血量%` / `$怪.生效$`。
+    m.insert(
+        "注册生物".into(),
+        hook(|d| {
+            let id = d.string(1).trim().to_string();
+            if id.is_empty() {
+                mob_error(d, "注册生物：缺少品种 id");
+                return ok_empty();
+            }
+            let plugin = current_plugin_name();
+            let generation = MOB_GENERATION.with(|g| g.get());
+            {
+                let map = mobs().lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(existing) = map.get(&id) {
+                    if existing.generation == generation && existing.plugin == plugin {
+                        return Ok(NValue::Class(existing.instance.clone()));
+                    }
+                }
+            }
+            let value = Val::arc();
+            value.set_class_name(Some("生物".to_string()));
+            value.set("品种", NValue::Str(id.clone()));
+            value.set("插件", NValue::Str(plugin.clone()));
+            for (key, def) in MOB_FIELDS {
+                let fallback = if *key == "名称" { id.clone() } else { (*def).to_string() };
+                value.set(key, NValue::Str(fallback));
+            }
+            value.set("物品", NValue::Str("[]".to_string()));
+            let instance = Arc::new(DicClass {
+                local_value: value,
+                dic_funcs: Arc::new(HashMap::new()),
+                fn_map: mob_methods(),
+            });
+            mobs()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(
+                    id,
+                    MobEntry {
+                        plugin,
+                        instance: instance.clone(),
+                        committed: false,
+                        generation,
+                    },
+                );
+            Ok(NValue::Class(instance))
+        }) as NasFunc,
+    );
+
+    // 注册物品 物品id → 返回物品对象（`Value::Class`）。
+    //
+    // 只建空白对象，字段由词库填：`$剑.载入 %配置文本%$` 批量写，或 `$剑.设 键 值$` 逐条写。
+    // 读文件这一步留给词库（`$读文件$`），宿主不碰插件目录。
+    m.insert(
+        "注册物品".into(),
+        hook(|d| {
+            let raw = d.string(1).trim().to_string();
+            if raw.is_empty() {
+                item_error(d, "注册物品：缺少物品 id");
+                return ok_empty();
+            }
+            // 命名空间默认 nebula：写 `star_sword` 和写 `nebula:star_sword` 等价。
+            let id = if raw.contains(':') {
+                raw
+            } else {
+                format!("nebula:{raw}")
+            };
+            let plugin = current_plugin_name();
+            let generation = MOB_GENERATION.with(|g| g.get());
+            {
+                let map = items().lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(existing) = map.get(&id) {
+                    if existing.generation == generation && existing.plugin == plugin {
+                        return Ok(NValue::Class(existing.instance.clone()));
+                    }
+                }
+            }
+            let value = Val::arc();
+            value.set_class_name(Some("物品".to_string()));
+            value.set("物品", NValue::Str(id.clone()));
+            value.set("插件", NValue::Str(plugin.clone()));
+            for (key, fallback) in ITEM_FIELDS {
+                let text = if *key == "名称" {
+                    id.clone()
+                } else {
+                    (*fallback).to_string()
+                };
+                value.set(key, NValue::Str(text));
+            }
+            let instance = Arc::new(DicClass {
+                local_value: value,
+                dic_funcs: Arc::new(HashMap::new()),
+                fn_map: item_methods(),
+            });
+            items()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(
+                    id,
+                    ItemEntry {
+                        plugin,
+                        instance: instance.clone(),
+                        committed: false,
+                        generation,
+                    },
+                );
+            Ok(NValue::Class(instance))
+        }) as NasFunc,
+    );
+
+    // 取物品列表 → 已注册物品的展示名串，供插件打印菜单
+    m.insert(
+        "取物品列表".into(),
+        hook(|_d| {
+            let req = json!({ "op": "取物品列表" }).to_string();
+            Ok(NValue::Str(
+                java_query(&req).unwrap_or_else(|| "[]".to_string()),
+            ))
+        }) as NasFunc,
+    );
+
     // 映射表里其余方法由规格表批量生成；已有的复杂方法（界面对象 / 指令注册）优先，
     // 不会被同名条目覆盖语义。
-    register_table_driven(&mut m);
+    register_table_driven(&mut m, world_specs());
     m
 }
 
@@ -924,6 +2292,81 @@ pub extern "C" fn nebula_embedded_sources() -> *const std::os::raw::c_char {
     concat!("NEBULA_SOURCES=", env!("NEBULA_EMBEDDED_SOURCES"), "\0")
         .as_ptr()
         .cast()
+}
+
+// ──────────────────────── 全局对象 `java`（$java.eval） ────────────────────────
+
+/// `$java.eval` 的宿主入口。
+///
+/// 词库这一侧只做转发：代码（或 `.java` 文件）连同插件归属、参数一起交给 Java 的
+/// `JavaSnippet`，编译、缓存、实例化、执行都在那边。为什么不放 Rust 侧：编译要用
+/// `jdk.compiler`，而类路径必须是<b>运行时类加载器</b>里的那份 Minecraft 定义，
+/// 只有 JVM 内才拿得到。
+fn java_methods() -> HashMap<String, NasFunc> {
+    let mut m = HashMap::new();
+    m.insert(
+        "eval".into(),
+        hook(|d| {
+            let raw = d.string(1);
+            let trimmed = raw.trim();
+            // 两种来源：`.java` 结尾按插件目录里的文件读，否则当内联源码。
+            let (code, source, read_error) = if trimmed.to_ascii_lowercase().ends_with(".java") {
+                match current_plugin_dir() {
+                    Some(dir) => {
+                        let path = Path::new(trimmed);
+                        let path = if path.is_absolute() {
+                            path.to_path_buf()
+                        } else {
+                            dir.join(path)
+                        };
+                        match std::fs::read_to_string(&path) {
+                            Ok(text) => (text, path.display().to_string(), None),
+                            Err(e) => (
+                                String::new(),
+                                path.display().to_string(),
+                                Some(format!("读取 {trimmed} 失败：{e}")),
+                            ),
+                        }
+                    }
+                    None => (
+                        String::new(),
+                        trimmed.to_string(),
+                        Some(format!("找不到插件目录，无法定位 {trimmed}")),
+                    ),
+                }
+            } else {
+                (raw.clone(), "内联".to_string(), None)
+            };
+            let mut request = json!({
+                "op": "java.eval",
+                "插件": current_plugin_name(),
+                "来源": source,
+                "代码": code,
+                "参数": d.string(2),
+            });
+            if let Some(error) = read_error {
+                request["错误"] = serde_json::Value::String(error);
+            }
+            Ok(NValue::Str(
+                java_query(&request.to_string()).unwrap_or_default(),
+            ))
+        }) as NasFunc,
+    );
+    m
+}
+
+/// 发布注入类 `java`：词库写 `$java.eval <代码>$` 即可用。
+fn publish_java() {
+    let methods = java_methods();
+    let local_value = Val::arc();
+    local_value.set_class_name(Some("java".to_string()));
+    let instance = Arc::new(DicClass {
+        local_value,
+        dic_funcs: Arc::new(HashMap::new()),
+        fn_map: Arc::new(methods.clone()),
+    });
+    imports::register_injected_class("java", methods);
+    set_system_var("java", NValue::Class(instance));
 }
 
 /// 把方法表发布成注入类 `世界` 与系统变量 `世界`：词库直接 `$世界.提示 …$` 即可用。
@@ -942,6 +2385,8 @@ fn publish_world() {
     });
     imports::register_injected_class("世界", methods);
     set_system_var("世界", NValue::Class(instance));
+    // `java` 跟着一起发：两者都是词库的注入根，少一个就整批 `$java.eval` 变文本。
+    publish_java();
 }
 
 // ────────────────────────────── 插件注册表 ──────────────────────────────
@@ -1054,7 +2499,7 @@ fn count_entries(dic: &NebulaDic, dir: &Path) -> usize {
 /// 插件目录里全部 `.n` / `.json` 文件的「文件名 + 修改时间」指纹。
 ///
 /// 调试模式下每次事件前比一次：值变了就重编译。`.json` 也纳入指纹，改配置 / 商品目录
-/// 后不用手动 reload。只会读顶层平铺文件，与 `build_dic_from_dir` 的收集范围一致。
+/// 后不用手动 load。只会读顶层平铺文件，与 `build_dic_from_dir` 的收集范围一致。
 fn plugin_stamp(dir: &Path) -> u64 {
     use std::hash::{Hash, Hasher};
 
@@ -1145,7 +2590,93 @@ fn one_line(s: &str) -> String {
     s.replace(['\r', '\n'], " ").trim().to_string()
 }
 
-fn compile_plugin(name: &str, dir: &Path) -> Result<Plugin, String> {
+/// 插件场景里的「误报」诊断。
+///
+/// - `UNDEFINED_VAR`：`%玩家名%` / `%参数%` / `%entity.name%` 由宿主在事件/指令帧
+///   里注入，逐文件静态检查看不见，插件里几乎每条事件都会命中。
+/// - `UNDEFINED_FUNC`：目录库是多文件合并的，而该检查逐文件跑，`界面.n` 调 `main.n`
+///   的函数会被判成未知 —— 只要这个名字在本插件里确实有定义就放过；真有笔误仍会报。
+fn warning_is_noise(plugin: &Plugin, w: &nebula::model::BuildWarning) -> bool {
+    use nebula::diagnostic::code;
+    if w.code == code::UNDEFINED_VAR {
+        return true;
+    }
+    if w.code == code::UNDEFINED_FUNC {
+        if let Some(name) = first_dollar_name(&w.text) {
+            return has_trigger(&plugin.dic, name);
+        }
+    }
+    false
+}
+
+/// 从诊断文本里取第一个 `$名字$`（引擎文案固定以它开头）。
+fn first_dollar_name(text: &str) -> Option<&str> {
+    let start = text.find('$')? + 1;
+    let rest = &text[start..];
+    let end = rest.find('$')?;
+    (!rest[..end].is_empty()).then(|| &rest[..end])
+}
+
+/// 编译期诊断的可读文本（引擎 `BuildValue.warnings`）。
+///
+/// 引擎会把「`$...$` 未闭合」「未知函数」「未定义变量」这类问题记进
+/// `warnings`，但宿主以前整批丢弃 —— 词库里漏一个结尾 `$` 只会静默降级成
+/// 文本输出，日志里一个字都没有。这里把它摊平成 `[编译错误] main.n:119 …`。
+fn plugin_warnings(plugin: &Plugin) -> Vec<String> {
+    plugin
+        .dic
+        .data
+        .warnings
+        .iter()
+        .filter(|w| !warning_is_noise(plugin, w))
+        .map(|w| {
+            let level = if w.level == "error" {
+                "编译错误"
+            } else {
+                "编译警告"
+            };
+            let file = Path::new(&w.file)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| w.file.clone());
+            format!("[{level}] {file}:{} {}", w.line, w.text)
+        })
+        .collect()
+}
+
+/// 加载/重载消息尾巴：有诊断时提示条数，细节在控制台。
+fn warning_suffix(plugin: &Plugin) -> String {
+    match plugin_warnings(plugin).len() {
+        0 => String::new(),
+        n => format!(" · {n} 条编译诊断（详见控制台）"),
+    }
+}
+
+/// 把指定插件当前的编译诊断摊平成「插件 名 [编译错误] main.n:6 …」。
+///
+/// 走 `diagnostics` 字段回给 Java 宿主记 WARN：Rust 侧 `println!` 只到 stdout，
+/// dedicated server 的 `logs/latest.log` 里看不到，而宿主 logger 会写进去。
+fn plugin_diagnostics(state: &Bridge, names: &[String]) -> Vec<String> {
+    let reg = state.plugins.lock().unwrap_or_else(|e| e.into_inner());
+    names
+        .iter()
+        .filter_map(|name| reg.get(name))
+        .flat_map(|plugin| {
+            plugin_warnings(plugin)
+                .into_iter()
+                .map(|line| format!("插件 {} {line}", plugin.name))
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+/// 编译插件目录；`with_hooks=false` 时只编译、不跑 `@头部` / `[f]初始化`。
+///
+/// 「预编译检查」用这个：钩子有副作用（注册指令、写文件、发动作），
+/// 只想看诊断时绝不能跑。
+fn build_plugin(name: &str, dir: &Path, with_hooks: bool) -> Result<Plugin, String> {
+    // 记下目录：`$java.eval` 读 `.java` 文件时要用（详见 java_methods）。
+    remember_plugin_dir(name, dir);
     let entry = plugin_entry(dir)?;
     let dic = load_plugin_dic(dir, &entry)
         .map_err(|e| format!("编译插件 {name}（{}）失败：{e}", entry.display()))?;
@@ -1159,6 +2690,9 @@ fn compile_plugin(name: &str, dir: &Path) -> Result<Plugin, String> {
         debug: false,
         stamp: plugin_stamp(dir),
     };
+    if !with_hooks {
+        return Ok(plugin);
+    }
     // 词库（含函数帧）从词库 root 读取 `%库目录%`，用来加载同目录下的配置 / 商品 JSON。
     plugin
         .dic
@@ -1175,69 +2709,90 @@ fn compile_plugin(name: &str, dir: &Path) -> Result<Plugin, String> {
     Ok(plugin)
 }
 
-// ────────────────────────────── 插件操作 ──────────────────────────────
-
-fn op_load(state: &Bridge, name: &str) -> Result<String, String> {
-    if state
-        .plugins
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .contains_key(name)
-    {
-        return Ok(format!("插件 {name} 已加载，跳过"));
-    }
-    let dir = scan_plugins(&state.root)
-        .into_iter()
-        .find(|(n, _)| n == name)
-        .map(|(_, d)| d)
-        .ok_or_else(|| {
-            format!(
-                "找不到插件「{name}」：目录 {} 下不存在或被禁用",
-                state.root.display()
-            )
-        })?;
-    let plugin = compile_plugin(name, &dir)?;
-    let hook = run_hook(&plugin, "加载")
-        .map(|s| format!("（{s}）"))
-        .unwrap_or_default();
-    state
-        .plugins
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(name.to_string(), plugin.clone());
-    Ok(format!(
-        "已加载 {name}（{} 词条，{}）{hook}",
-        plugin.entries,
-        plugin.entry.display()
-    ))
+fn compile_plugin(name: &str, dir: &Path) -> Result<Plugin, String> {
+    build_plugin(name, dir, true)
 }
 
-fn op_reload(state: &Bridge, name: &str) -> Result<String, String> {
-    let (dir, debug) = {
-        let reg = state.plugins.lock().unwrap_or_else(|e| e.into_inner());
-        let old = reg
-            .get(name)
-            .ok_or_else(|| format!("插件 {name} 未加载：请先 /nebula load {name}"))?;
-        (
-            old.entry
+/// 只编译不落地：给「先检查再上」用（测试里的随服词库预检）。
+#[cfg(test)]
+fn check_plugin(name: &str, dir: &Path) -> Result<Plugin, String> {
+    build_plugin(name, dir, false)
+}
+
+// ────────────────────────────── 插件操作 ──────────────────────────────
+
+/// 开始一轮编译：生物对象用代次区分「本轮声明」与「上一轮残留」。
+fn begin_mob_generation() -> u64 {
+    let generation = MOB_SEQ.fetch_add(1, Ordering::SeqCst);
+    MOB_GENERATION.with(|g| g.set(generation));
+    generation
+}
+
+/// `/nebula load`：唯一入口。没加载过就编译 + 跑 `[f]加载`；已加载就原地重编译，
+/// 等价于旧的 reload（保留调试开关，不重复「首次加载」提示）。两种情况都会重跑
+/// `[f]初始化`，本批没声明的东西（指令 / 生物）靠批次对账与代次回收自动下线。
+fn op_load(state: &Bridge, name: &str) -> Result<String, String> {
+    let old = state
+        .plugins
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(name)
+        .cloned();
+    let (dir, debug, first) = match old {
+        Some(p) => (
+            p.entry
                 .parent()
                 .unwrap_or_else(|| Path::new("."))
                 .to_path_buf(),
-            old.debug,
-        )
+            p.debug,
+            false,
+        ),
+        None => {
+            let d = scan_plugins(&state.root)
+                .into_iter()
+                .find(|(n, _)| n == name)
+                .map(|(_, d)| d)
+                .ok_or_else(|| {
+                    format!(
+                        "找不到插件「{name}」：目录 {} 下不存在或被禁用",
+                        state.root.display()
+                    )
+                })?;
+            (d, false, true)
+        }
     };
     // 先编译成功再替换：词库写坏时旧版本继续可用。
     let mut plugin = compile_plugin(name, &dir)?;
     plugin.debug = debug;
-    let hook = run_hook(&plugin, "重载")
-        .map(|s| format!("（{s}）"))
-        .unwrap_or_default();
+    let hook = if first {
+        run_hook(&plugin, "加载")
+            .map(|s| format!("（{s}）"))
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
     state
         .plugins
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .insert(name.to_string(), plugin.clone());
-    Ok(format!("已重载 {name}（{} 词条）{hook}", plugin.entries))
+    // 编译成功才清旧代次：本批没声明的品种自动下线；失败时保留旧对象集。
+    mob_retain(Some(name), MOB_GENERATION.with(|g| g.get()));
+    item_retain(Some(name), MOB_GENERATION.with(|g| g.get()));
+    Ok(if first {
+        format!(
+            "已加载 {name}（{} 词条，{}）{hook}{}",
+            plugin.entries,
+            plugin.entry.display(),
+            warning_suffix(&plugin)
+        )
+    } else {
+        format!(
+            "已加载 {name}（{} 词条）{}",
+            plugin.entries,
+            warning_suffix(&plugin)
+        )
+    })
 }
 
 /// `/nebula debug` / `undebug`：开关调试自动重编译。
@@ -1256,7 +2811,7 @@ fn op_debug(state: &Bridge, name: &str, on: bool) -> Result<String, String> {
             "已开启调试 {name}：改词库文件后，下次事件自动重载（/nebula undebug {name} 关闭）"
         ))
     } else {
-        Ok(format!("已关闭调试 {name}：改词库后请手动 /nebula reload {name}"))
+        Ok(format!("已关闭调试 {name}：改词库后请手动 /nebula load {name}"))
     }
 }
 
@@ -1280,6 +2835,9 @@ fn refresh_debug_plugin(state: &Bridge, plugin: &Plugin) -> Plugin {
         // 同一次改动已经被别的线程/事件重载过了。
         return current;
     }
+    // 调试重编译也开启新代次：`[f]初始化` 里的注册对象属于这一轮，
+    // 否则它们会和上一轮混在一起，删掉的定义不回收（§4.3 / P1-2）。
+    let generation = begin_mob_generation();
     match compile_plugin(&current.name, dir) {
         Ok(mut fresh) => {
             fresh.debug = true;
@@ -1289,6 +2847,10 @@ fn refresh_debug_plugin(state: &Bridge, plugin: &Plugin) -> Plugin {
                 fresh.name, fresh.entries
             );
             reg.insert(fresh.name.clone(), fresh.clone());
+            mob_retain(Some(&fresh.name), generation);
+            mob_auto_commit(std::slice::from_ref(&fresh.name), generation);
+            item_retain(Some(&fresh.name), generation);
+            item_auto_commit(std::slice::from_ref(&fresh.name), generation);
             fresh
         }
         Err(e) => {
@@ -1309,16 +2871,18 @@ fn op_unload(state: &Bridge, name: &str) -> Result<String, String> {
         .remove(name);
     match removed {
         None => Ok(format!("插件 {name} 未加载，跳过")),
-        Some(p) => {
-            let hook = run_hook(&p, "卸载")
-                .map(|s| format!("（{s}）"))
-                .unwrap_or_default();
-            // 插件卸载后它的界面回调不能再触发。
+        Some(_p) => {
+            // 卸载完全由加载器接管：界面、生物对象、事件订阅（`EventBridge.refresh`）、
+            // 插件指令（宿主按归属批量注销）都由加载器回收。
+            // `[f]卸载` 钩子已移除 —— 插件不再需要写任何清理代码。
             guis()
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .retain(|_, g| g.plugin != name);
-            Ok(format!("已卸载 {name}{hook}"))
+            // `0` 代次保证该插件全部生物 / 物品下线，并对宿主补发注销动作。
+            mob_retain(Some(name), 0);
+            item_retain(Some(name), 0);
+            Ok(format!("已卸载 {name}"))
         }
     }
 }
@@ -1341,18 +2905,21 @@ fn target_names(state: &Bridge, target: &str, op: &str) -> Result<Vec<String>, S
 }
 
 fn apply_op(state: &Bridge, op: &str, target: &str) -> String {
+    // 整轮共用同一个代次：`--all` 时所有插件都属于「这一批」。
+    let generation = begin_mob_generation();
     let names = match target_names(state, target, op) {
         Ok(n) => n,
         Err(e) => {
-            return json!({ "summary": e, "ok": false, "actions": take_actions() }).to_string()
+            return json!({ "summary": e, "ok": false, "actions": take_actions(), "批次": generation })
+                .to_string()
         }
     };
     let mut done: Vec<String> = Vec::new();
     let mut failed: Vec<String> = Vec::new();
+    let mut failed_names: Vec<String> = Vec::new();
     for name in &names {
         let result = match op {
             "load" => op_load(state, name),
-            "reload" => op_reload(state, name),
             "debug" => op_debug(state, name, true),
             "undebug" => op_debug(state, name, false),
             _ => op_unload(state, name),
@@ -1362,12 +2929,15 @@ fn apply_op(state: &Bridge, op: &str, target: &str) -> String {
             Err(e) => {
                 eprintln!("[星云] {e}");
                 failed.push(e);
+                failed_names.push(name.clone());
             }
         }
     }
+    // 未调用 `生效` 的对象在这里补提交（编译成功的那部分）。
+    mob_auto_commit(&names, generation);
+    item_auto_commit(&names, generation);
     let label = match op {
         "load" => "加载",
-        "reload" => "重载",
         "debug" => "开启调试",
         "undebug" => "关闭调试",
         _ => "卸载",
@@ -1380,25 +2950,44 @@ fn apply_op(state: &Bridge, op: &str, target: &str) -> String {
     if !failed.is_empty() {
         summary.push_str(&format!("，失败 {} 个：{}", failed.len(), failed.join("；")));
     }
+    // P0-3：编译失败的插件，本轮产生的动作（含 `注册生物`）一律丢弃，
+    // 不能让坏词库注册出半成品；`--all` 时成功的插件照常提交。
+    let mut actions = take_actions();
+    if !failed_names.is_empty() {
+        actions.retain(|action| {
+            let owner = action.get("插件").and_then(|v| v.as_str()).unwrap_or("");
+            !failed_names.iter().any(|f| f == owner)
+        });
+    }
     json!({
         "summary": one_line(&summary),
         "ok": failed.is_empty(),
-        "actions": take_actions(),
+        "actions": actions,
+        "批次": generation,
+        "失败插件": failed_names,
+        "diagnostics": plugin_diagnostics(state, &names),
     })
     .to_string()
 }
 
 fn load_all(state: &Bridge) -> String {
+    let generation = begin_mob_generation();
     let mut map = BTreeMap::new();
     let mut done: Vec<String> = Vec::new();
     let mut failed: Vec<String> = Vec::new();
+    let mut loaded_names: Vec<String> = Vec::new();
     for (name, dir) in scan_plugins(&state.root) {
         match compile_plugin(&name, &dir) {
             Ok(plugin) => {
                 let hook = run_hook(&plugin, "加载")
                     .map(|s| format!("（{s}）"))
                     .unwrap_or_default();
-                done.push(format!("{name}（{} 词条）{hook}", plugin.entries));
+                done.push(format!(
+                    "{name}（{} 词条）{hook}{}",
+                    plugin.entries,
+                    warning_suffix(&plugin)
+                ));
+                loaded_names.push(name.clone());
                 map.insert(name, plugin);
             }
             Err(e) => {
@@ -1408,6 +2997,13 @@ fn load_all(state: &Bridge) -> String {
         }
     }
     *state.plugins.lock().unwrap_or_else(|e| e.into_inner()) = map;
+    // 开服全量加载：成功加载的插件按「本批声明」收口，失败插件不动（本来也没有旧对象）。
+    for name in &loaded_names {
+        mob_retain(Some(name), generation);
+        item_retain(Some(name), generation);
+    }
+    mob_auto_commit(&loaded_names, generation);
+    item_auto_commit(&loaded_names, generation);
     let mut summary = if done.is_empty() {
         format!(
             "插件目录 {} 下没有可加载的插件",
@@ -1419,10 +3015,28 @@ fn load_all(state: &Bridge) -> String {
     if !failed.is_empty() {
         summary.push_str(&format!("；失败：{}", failed.join("，")));
     }
+    let loaded: Vec<String> = state
+        .plugins
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .keys()
+        .cloned()
+        .collect();
+    // P0-3：失败插件本轮的动作一律丢弃。
+    let mut actions = take_actions();
+    if !failed.is_empty() {
+        actions.retain(|action| {
+            let owner = action.get("插件").and_then(|v| v.as_str()).unwrap_or("");
+            !failed.iter().any(|f| f == owner)
+        });
+    }
     json!({
         "summary": one_line(&summary),
         "ok": failed.is_empty(),
-        "actions": take_actions(),
+        "actions": actions,
+        "批次": generation,
+        "失败插件": failed,
+        "diagnostics": plugin_diagnostics(state, &loaded),
     })
     .to_string()
 }
@@ -1461,6 +3075,8 @@ fn list_plugins(state: &Bridge) -> String {
 }
 
 fn dispatch_event(state: &Bridge, trigger: &str, payload: &str) -> String {
+    // 上一轮如果是在事件帧外（`[f]加载` / 指令）调过 `ctx.cancel()`，脏标志不能带到这一轮。
+    CANCEL.with(|c| c.set(false));
     let vars = parse_payload(payload);
     let mut outputs = Vec::new();
     for plugin in state.loaded() {
@@ -1488,6 +3104,9 @@ fn dispatch_event(state: &Bridge, trigger: &str, payload: &str) -> String {
         "outputs": outputs,
         "actions": take_actions(),
         "cancel": take_cancel(),
+        // 调试自动重编译会在事件帧前开启新代次并产生 `注册生物` 动作，
+        // 宿主靠这个字段做「按批次收口」；普通事件里 BATCH_PLUGINS 为空，commit 是空操作。
+        "批次": MOB_GENERATION.with(|g| g.get()),
     })
     .to_string()
 }
@@ -1724,7 +3343,7 @@ fn event_triggers(state: &Bridge) -> String {
         .unwrap_or_else(|_| "[]".to_string())
 }
 
-/// 供宿主刷新「事件名 → 监听器」订阅表：只在 load / reload / unload / debug 后调用。
+/// 供宿主刷新「事件名 → 监听器」订阅表：只在 load / unload / debug 后调用。
 #[no_mangle]
 pub extern "system" fn Java_nebula_neoforge_NativeBridge_eventTriggers(
     mut env: JNIEnv<'_>,
@@ -1795,13 +3414,32 @@ pub extern "system" fn Java_nebula_neoforge_NativeBridge_closeGui(
     close_gui(gui_id.max(0) as u64);
 }
 
+/// `$java.eval` 片段取消事件：Java 的 `Ctx.cancel()` 直接写回本次分发的取消标志。
+///
+/// 只在事件帧内有效：`dispatch_event` 结尾的 `take_cancel()` 会消费掉它。标志按线程保存，
+/// 片段本来就跑在服务端主线程，跟词库的 `$世界.取消事件$` 共用同一个 Cell。
+#[no_mangle]
+pub extern "system" fn Java_nebula_neoforge_NativeBridge_markCancel(
+    _env: JNIEnv<'_>,
+    _class: JClass<'_>,
+) {
+    CANCEL.with(|c| c.set(true));
+}
+
 #[no_mangle]
 pub extern "system" fn Java_nebula_neoforge_NativeBridge_create(
     mut env: JNIEnv<'_>,
     _class: JClass<'_>,
     root: JString<'_>,
+    specs_json: JString<'_>,
 ) -> jlong {
     let root = jstring_to_string(&mut env, &root);
+    let specs_json = jstring_to_string(&mut env, &specs_json);
+    // 方法规格由 jar 内的 world-specs.json 提供；解析失败时回退编译期副本，
+    // 保证旧 jar / 坏资源不会让服务端起不来。
+    if let Err(e) = init_world_specs(&specs_json) {
+        eprintln!("[星云] world-specs.json 无效，回退内置副本：{e}");
+    }
     // 缓存 JVM 与查询回调类：查询类 `世界` 方法在事件分发期间同步回调 Java。
     if let Ok(vm) = env.get_java_vm() {
         let _ = JVM.set(vm);
@@ -1840,6 +3478,8 @@ pub extern "system" fn Java_nebula_neoforge_NativeBridge_destroy(
         return;
     }
     guis().lock().unwrap_or_else(|e| e.into_inner()).clear();
+    mobs().lock().unwrap_or_else(|e| e.into_inner()).clear();
+    items().lock().unwrap_or_else(|e| e.into_inner()).clear();
     let _ = std::panic::catch_unwind(|| unsafe {
         drop(Box::from_raw(handle as *mut Bridge));
     });
@@ -1873,24 +3513,6 @@ pub extern "system" fn Java_nebula_neoforge_NativeBridge_load(
         begin_call();
         match state(handle) {
             Some(s) => apply_op(s, "load", &target),
-            None => no_handle(),
-        }
-    });
-    ret(&mut env, out)
-}
-
-#[no_mangle]
-pub extern "system" fn Java_nebula_neoforge_NativeBridge_reload(
-    mut env: JNIEnv<'_>,
-    _class: JClass<'_>,
-    handle: jlong,
-    target: JString<'_>,
-) -> jstring {
-    let target = jstring_to_string(&mut env, &target);
-    let out = guard(|| unsafe {
-        begin_call();
-        match state(handle) {
-            Some(s) => apply_op(s, "reload", &target),
             None => no_handle(),
         }
     });
@@ -1993,8 +3615,142 @@ mod tests {
 
     fn temp_dir(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("nebula-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    /// `$...$` 漏结尾 `$` 必须能在编译期被看见：引擎记 NEB0004，宿主摊平成日志行。
+    /// 这条是 2026-11-14 Tab列表 事故的回归锁：漏 `$` 不报错、只静默变文本，
+    /// 以前宿主把 warnings 丢掉，作者只能靠肉眼发现。
+    #[test]
+    fn compile_warnings_surface_unclosed_dollar() {
+        let dir = temp_dir("unclosed-dollar");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n$世界.注册指令 tab 0 tab$\n\n[指令]tab\n$世界.提示 %玩家名% \"坏行\"\n",
+        )
+        .unwrap();
+        let plugin = compile_plugin("漏美元符", &dir).unwrap();
+
+        let lines = plugin_warnings(&plugin);
+        assert!(
+            lines.iter().any(|l| l.contains("未闭合")),
+            "漏结尾 $ 必须产生诊断，实际：{lines:?}"
+        );
+        assert!(
+            lines.iter().any(|l| l.contains("main.n:6")),
+            "诊断要指到出问题的行，实际：{lines:?}"
+        );
+        assert!(
+            lines.iter().all(|l| l.starts_with("[编译")),
+            "诊断要带级别前缀，实际：{lines:?}"
+        );
+        assert!(warning_suffix(&plugin).contains("编译诊断"));
+
+        // 写对的行不该再报
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n$世界.注册指令 tab 0 tab$\n\n[指令]tab\n$世界.提示 %玩家名% \"好行\"$\n",
+        )
+        .unwrap();
+        let ok = compile_plugin("正确", &dir).unwrap();
+        assert!(
+            plugin_warnings(&ok).is_empty(),
+            "正确的结尾 $ 不该有诊断：{:?}",
+            plugin_warnings(&ok)
+        );
+        assert!(warning_suffix(&ok).is_empty());
+    }
+
+    /// 掉落物堆叠的白名单是 JSON 数组，靠实参位置交给宿主 `聚拢掉落物`。
+    /// 实参路径要保住 `[` / `"` 原样（旧版担心它被当算术或引号处理掉），
+    /// 否则宿主解析出空白名单 → 一颗掉落物都不聚，而且**完全没有报错**。
+    #[test]
+    fn gather_dropstack_passes_whitelist_json() {
+        nebula::init();
+        publish_world();
+        let _ = take_actions();
+        let dir = temp_dir("gather-drops");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n文::{\"物品\":[\"minecraft:cobblestone\",\"minecraft:dirt\"],\"半径\":3}\n表:$JSON键读 %文% 物品$\n径:$JSON键读 %文% 半径$\n$世界.聚拢掉落物 minecraft:overworld %表% %径% 是 否$\n",
+        )
+        .unwrap();
+        compile_plugin("聚拢", &dir).unwrap();
+
+        let actions = take_actions();
+        let gather = actions
+            .iter()
+            .find(|a| a["op"] == "聚拢掉落物")
+            .unwrap_or_else(|| panic!("没有聚拢动作：{actions:?}"));
+        assert_eq!(gather["维度"], "minecraft:overworld");
+        assert_eq!(
+            gather["白名单"], "[\"minecraft:cobblestone\",\"minecraft:dirt\"]",
+            "白名单 JSON 必须原样到达宿主"
+        );
+        assert_eq!(gather["半径"], json!(3.0));
+        assert_eq!(gather["保护"], json!(true));
+        assert_eq!(gather["无限"], json!(false));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// 目录库的跨文件调用不该被报成「未知函数」：逐文件静态检查看不到别的文件，
+    /// 宿主这边按本插件已有的函数表放过，只留真正的笔误。
+    #[test]
+    fn cross_file_calls_are_not_reported_as_unknown() {
+        let dir = temp_dir("cross-file");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n模式:1\n\n[函数]工具 值\n%值%\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("界面.n"),
+            "\n[事件]t\n结果:$工具 3$\n结果=%结果%\n",
+        )
+        .unwrap();
+        let plugin = compile_plugin("跨文件", &dir).unwrap();
+        let lines = plugin_warnings(&plugin);
+        assert!(
+            !lines.iter().any(|l| l.contains("工具")),
+            "跨文件调用不该报未知函数：{lines:?}"
+        );
+
+        // 过滤只对「本插件确实有这个函数」生效，真笔误仍然保留
+        use nebula::diagnostic::code;
+        let known = nebula::model::BuildWarning::new(
+            code::UNDEFINED_FUNC,
+            "warning",
+            "",
+            1,
+            1,
+            "`$工具$` 既不是本词库函数，也不是内置函数：运行期会原样输出 `$...$`",
+        );
+        assert!(
+            warning_is_noise(&plugin, &known),
+            "本插件有 `工具` 时应按跨文件误报放过"
+        );
+        let typo = nebula::model::BuildWarning::new(
+            code::UNDEFINED_FUNC,
+            "warning",
+            "",
+            1,
+            1,
+            "`$工具x$` 既不是本词库函数，也不是内置函数：运行期会原样输出 `$...$`",
+        );
+        assert!(!warning_is_noise(&plugin, &typo), "真笔误不能被吞掉");
+
+        // 事件帧里的 `%玩家名%` 由宿主注入，不该报未定义变量
+        let injected = nebula::model::BuildWarning::new(
+            code::UNDEFINED_VAR,
+            "warning",
+            "",
+            1,
+            1,
+            "`%玩家名%` 在本词库内没有声明或赋值",
+        );
+        assert!(warning_is_noise(&plugin, &injected));
     }
 
     #[test]
@@ -2027,7 +3783,7 @@ mod tests {
     }
 
     #[test]
-    fn debug_toggle_keeps_reload_state() {
+    fn debug_toggle_survives_reload() {
         let dir = temp_dir("debug");
         std::fs::write(dir.join("main.n"), "\n[f]初始化\n上限:8\n").unwrap();
         let plugin = compile_plugin("test-plugin", &dir).unwrap();
@@ -2042,9 +3798,9 @@ mod tests {
         let marked = bridge.plugins.lock().unwrap().get("test-plugin").cloned().unwrap();
         assert!(marked.debug);
 
-        // 手动 reload 不能把调试开关冲掉
-        let reloaded = op_reload(&bridge, "test-plugin").unwrap();
-        assert!(reloaded.contains("已重载"));
+        // 再次 load（等价旧 reload）不能把调试开关冲掉
+        let reloaded = op_load(&bridge, "test-plugin").unwrap();
+        assert!(reloaded.contains("已加载"));
         assert!(bridge.plugins.lock().unwrap().get("test-plugin").unwrap().debug);
 
         let msg = op_debug(&bridge, "test-plugin", false).unwrap();
@@ -2091,11 +3847,11 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
-    /// `mod/docs/mc-api-map.md` 是契约，`mc_methods()` 是实现：两边必须一一对应。
+    /// `NebulaLoadMod/docs/mc-api-map.md` 是契约，`mc_methods()` 是实现：两边必须一一对应。
     /// 这样以后往映射表加方法时，忘了写函数会直接被测试拦住。
     #[test]
     fn every_mapped_mc_method_has_a_function() {
-        let doc = include_str!("../../mod/docs/mc-api-map.md");
+        let doc = include_str!("../../NebulaLoadMod/docs/mc-api-map.md");
         let methods = mc_methods();
         let mut mapped: Vec<String> = Vec::new();
         let mut in_event_table = false;
@@ -2178,7 +3934,51 @@ mod tests {
         )
     }
 
-    /// 规格表拼出来的 JSON 必须与 mod/docs/mc-api-map.md 的参数顺序一致。
+    /// `注册指令` 的 `参数=` 段必须落成「子参数」数组：宿主靠它注册 literal 子节点，
+    /// 客户端 Tab 才看得见 `/商店 帮助`。顺带锁住两件事 —— 别名不能把 `参数=` 吞进去、
+    /// `参数=` 之后的零散实参也算子参数（词库作者很容易写成空格分隔）。
+    #[test]
+    fn register_command_parses_subs() {
+        let methods = mc_methods();
+        let _ = take_actions();
+
+        let mut d = fake_inputs("注册指令", &[
+            "商店",
+            "0",
+            "shop",
+            "泥土商店",
+            "参数=帮助,余额",
+        ]);
+        (methods.get("注册指令").unwrap())(&mut d).unwrap();
+        let actions = take_actions();
+        assert_eq!(actions.len(), 1, "注册指令应只压入一个动作");
+        assert_eq!(actions[0]["指令"], "商店");
+        assert_eq!(actions[0]["别名"], json!(["shop", "泥土商店"]));
+        assert_eq!(actions[0]["权限"], 0);
+        assert_eq!(actions[0]["子参数"], json!(["帮助", "余额"]));
+
+        // 中文逗号、顿号都认；`参数=` 之后另起的实参继续算子参数。
+        let _ = take_actions();
+        let mut loose = fake_inputs("注册指令", &[
+            "商店",
+            "参数=帮助，余额",
+            "设置",
+        ]);
+        (methods.get("注册指令").unwrap())(&mut loose).unwrap();
+        let actions = take_actions();
+        assert!(actions[0]["别名"].as_array().unwrap().is_empty());
+        assert_eq!(actions[0]["子参数"], json!(["帮助", "余额", "设置"]));
+
+        // 不写 `参数=` 的老写法保持原样：别名照旧、子参数为空。
+        let _ = take_actions();
+        let mut plain = fake_inputs("注册指令", &["商店", "0", "shop"]);
+        (methods.get("注册指令").unwrap())(&mut plain).unwrap();
+        let actions = take_actions();
+        assert_eq!(actions[0]["别名"], json!(["shop"]));
+        assert!(actions[0]["子参数"].as_array().unwrap().is_empty());
+    }
+
+    /// 规格表拼出来的 JSON 必须与 NebulaLoadMod/docs/mc-api-map.md 的参数顺序一致。
     #[test]
     fn table_driven_request_shape() {
         let methods = mc_methods();
@@ -2249,10 +4049,161 @@ mod tests {
         }
     }
 
+    /// `$怪.造型$` / `$怪.贴图$` 必须真的并进 `定义.外观`。
+    ///
+    /// <p>0.7.0 之前外观几何写死在宿主里，词库写的方块模型参数被静默丢弃 —— 作者只能靠
+    /// 肉眼看「造型没变」才发现。这条测试把「声明 → 下发 JSON」这一段锁住：体/盖 两组盒子和
+    /// 逐面 UV 都要能原样读到，且不能踩掉 `外观` 自己的贴图字段。</p>
+    #[test]
+    fn mob_shape_and_uv_merge_into_look() {
+        nebula::init();
+        let dir = temp_dir("mob-shape");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n\
+             怪:$世界.注册生物 test:boxy$\n\
+             $怪.外观 方块 nebula_bridge:mob_body_0 nebula_bridge:block/x -0.5 0 -0.5 0.45$\n\
+             $怪.造型 体 2 0 2 14 10 14$\n\
+             $怪.造型 盖 2 10 2 14 12 14$\n\
+             $怪.贴图 体 上 0 0 8 8$\n\
+             $怪.生效$\n",
+        )
+        .unwrap();
+        let _ = compile_plugin("造型测试", &dir).unwrap();
+
+        let actions = take_actions();
+        let def = actions
+            .iter()
+            .find(|a| a.get("op").and_then(|v| v.as_str()) == Some("注册生物"))
+            .and_then(|a| a.get("定义"))
+            .expect("$怪.生效$ 必须压入一条 注册生物 动作");
+        let look = &def["外观"];
+        assert_eq!(look["体"], json!([2.0, 0.0, 2.0, 14.0, 10.0, 14.0]), "{look}");
+        assert_eq!(look["盖"], json!([2.0, 10.0, 2.0, 14.0, 12.0, 14.0]), "{look}");
+        assert_eq!(look["uv"]["体"]["up"]["uv"], json!([0.0, 0.0, 8.0, 8.0]), "{look}");
+        assert_eq!(look["贴图"], json!("nebula_bridge:block/x"), "造型不能踩掉贴图");
+        assert_eq!(look["偏移"], json!([-0.5, 0.0, -0.5]), "造型不能踩掉偏移");
+    }
+
+    /// `$怪.材质$` + `$怪.贴图$` 第 7 参 + `$怪.设 碰撞箱$` 必须原样落到定义里。
+    ///
+    /// <p>这三样都是「词库写了、宿主没读」的高危区（0.6.x 的三个空转参数就是这么来的），
+    /// 所以直接锁下发 JSON 的形状：材质进 `外观.材质`，面的材质名进 `uv.<部件>.<面>.贴图`，
+    /// 碰撞箱按声明原样下发（解析宽高在 Java 侧）。</p>
+    #[test]
+    fn mob_material_and_collision_land_in_definition() {
+        nebula::init();
+        let dir = temp_dir("mob-material");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n\
+             怪:$世界.注册生物 test:eye$\n\
+             $怪.外观 方块 nebula_bridge:mob_body_0 nebula_bridge:block/x -0.5 0 -0.5 0.45$\n\
+             $怪.材质 眼睛 nebula_bridge:block/eye$\n\
+             $怪.贴图 体 北 0 0 16 16 眼睛$\n\
+             $怪.贴图 盖 上 0 0 16 3$\n\
+             $怪.设 碰撞箱 自动$\n\
+             $怪.生效$\n",
+        )
+        .unwrap();
+        let _ = compile_plugin("材质测试", &dir).unwrap();
+
+        let actions = take_actions();
+        let def = actions
+            .iter()
+            .find(|a| a.get("op").and_then(|v| v.as_str()) == Some("注册生物"))
+            .and_then(|a| a.get("定义"))
+            .expect("要有 注册生物 动作");
+        let look = &def["外观"];
+        assert_eq!(look["材质"]["眼睛"], json!("nebula_bridge:block/eye"), "{look}");
+        assert_eq!(look["uv"]["体"]["north"]["贴图"], json!("眼睛"), "{look}");
+        assert_eq!(look["uv"]["体"]["north"]["uv"], json!([0.0, 0.0, 16.0, 16.0]), "{look}");
+        // 没写第 7 参的面不该带「贴图」键（否则会去查一个空材质名）
+        assert!(look["uv"]["盖"]["up"].get("贴图").is_none(), "{look}");
+        assert_eq!(def["碰撞箱"], json!("自动"));
+    }
+
+    /// `$怪.目标 …$` 必须按声明顺序落成 `目标` 数组，参数按位置进 `对象` / `数值1` / `数值2`。
+    ///
+    /// <p>Java 侧只会认得这几种「类型」，写错一个字符串就静默没有 AI —— 所以形状在测试里锁死。</p>
+    #[test]
+    fn mob_goals_land_in_definition() {
+        nebula::init();
+        let dir = temp_dir("mob-goals");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n\
+             怪:$世界.注册生物 test:hunter$\n\
+             $怪.目标 注视 玩家 12$\n\
+             $怪.目标 攻击 玩家 1.1 16$\n\
+             $怪.目标 恐慌 1.2$\n\
+             $怪.生效$\n",
+        )
+        .unwrap();
+        let _ = compile_plugin("目标测试", &dir).unwrap();
+
+        let actions = take_actions();
+        let def = actions
+            .iter()
+            .find(|a| a.get("op").and_then(|v| v.as_str()) == Some("注册生物"))
+            .and_then(|a| a.get("定义"))
+            .expect("要有 注册生物 动作");
+        let goals = def["目标"].as_array().expect("目标 必须是数组");
+        assert_eq!(goals.len(), 3, "{goals:?}");
+        assert_eq!(goals[0]["类型"], json!("注视"));
+        assert_eq!(goals[0]["对象"], json!("玩家"));
+        assert_eq!(goals[0]["数值1"], json!(12.0));
+        assert_eq!(goals[1]["类型"], json!("攻击"));
+        assert_eq!(goals[1]["数值2"], json!(16.0));
+        // 恐慌只给一个速度，不该凭空多出「对象」
+        assert!(goals[2].get("对象").is_none(), "{goals:?}");
+        assert_eq!(goals[2]["数值1"], json!(1.2));
+    }
+
+    /// `$怪.交互$` 与 `$怪.掉落$` 的打包形状。
+    ///
+    /// <p>这两个是「玩法决策下放到词库」的第一批：右键给东西、死亡按概率掉东西。
+    /// 概率缺省必须是 1.0（不写概率 = 必掉），数量缺省 1 —— 这两条写错会让「明明声明了却掉不出来」。</p>
+    #[test]
+    fn mob_interact_and_loot_land_in_definition() {
+        nebula::init();
+        let dir = temp_dir("mob-interact");
+        std::fs::write(
+            dir.join("main.n"),
+            "\n[f]初始化\n\
+             怪:$世界.注册生物 test:giver$\n\
+             $怪.交互 给予 minecraft:apple 3$\n\
+             $怪.掉落 minecraft:gold_nugget 0.5 2$\n\
+             $怪.掉落 minecraft:stick$\n\
+             $怪.生效$\n",
+        )
+        .unwrap();
+        let _ = compile_plugin("交互测试", &dir).unwrap();
+
+        let actions = take_actions();
+        let def = actions
+            .iter()
+            .find(|a| a.get("op").and_then(|v| v.as_str()) == Some("注册生物"))
+            .and_then(|a| a.get("定义"))
+            .expect("要有 注册生物 动作");
+        assert_eq!(def["交互"]["类型"], json!("给予"));
+        assert_eq!(def["交互"]["物品"], json!("minecraft:apple"));
+        assert_eq!(def["交互"]["数量"], json!(3));
+        let drops = def["掉落"].as_array().expect("掉落 必须是数组");
+        assert_eq!(drops.len(), 2, "{drops:?}");
+        assert_eq!(drops[0]["物品"], json!("minecraft:gold_nugget"));
+        assert_eq!(drops[0]["概率"], json!(0.5));
+        assert_eq!(drops[0]["数量"], json!(2));
+        assert_eq!(drops[1]["概率"], json!(1.0), "不写概率必须等于必掉");
+        assert_eq!(drops[1]["数量"], json!(1));
+    }
+
     /// 随服发行的词库必须能编译：语法错误（缩进、`如果尾`、漏 `$`）在测试里就炸出来，
     /// 不必等进游戏 `/nebula load` 才发现。
     #[test]
-    fn shipped_wordlibs_compile() {
+    fn shipped_wordlibs_compile() {        // 内置函数要先注册，否则 `$查找字$`/`$JSON键读$` 会被误判成未知函数。
+        // 生产路径由 JNI create 里的 nebula::init() 完成；测试里手动补一次（幂等）。
+        nebula::init();
         let javamc = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
         let root = javamc.join("server-1.21.11").join("nebula");
         if !root.is_dir() {
@@ -2270,39 +4221,35 @@ mod tests {
             .collect();
         dirs.sort();
         assert!(!dirs.is_empty(), "{} 下没有任何插件目录", root.display());
+        // 预编译检查：随服插件不仅「能编译」，还不许带任何编译诊断。
+        // 漏结尾 `$`（NEB0004）这类问题编译期就能看见、运行期只会静默变文本，
+        // 所以直接把它做成红灯，别等进游戏才发现「没反应」。
+        let mut noisy: Vec<String> = Vec::new();
         for dir in dirs {
             // 没有 .n 的目录（纯数据目录）跳过；有词库的必须过编译。
             if plugin_entry(&dir).is_err() {
                 continue;
             }
             let name = dir.file_name().unwrap().to_string_lossy().into_owned();
-            let entry = plugin_entry(&dir).unwrap();
-            load_plugin_dic(&dir, &entry)
-                .unwrap_or_else(|e| panic!("词库 {name} 编译失败：{e}"));
+            let plugin = check_plugin(&name, &dir).unwrap_or_else(|e| panic!("词库 {name} 编译失败：{e}"));
+            for line in plugin_warnings(&plugin) {
+                noisy.push(format!("{name} {line}"));
+            }
         }
+        assert!(
+            noisy.is_empty(),
+            "随服词库有编译诊断，先修再上线（/nebula load 也能看到同样的行）：\n  {}",
+            noisy.join("\n  ")
+        );
     }
 
     /// 光有 `世界` 函数还不够：宿主必须真的有处理分支，否则方法调用会石沉大海。
     /// 这条测试把「规格表 ↔ McApi/McActions/NebulaMod 的 switch」锁在一起。
     #[test]
     fn every_method_has_a_host_handler() {
-        // 只解析测试模块之前的实现部分，避免把测试里的字符串字面量当成规格。
-        let rust = include_str!("lib.rs").split("#[cfg(test)]").next().unwrap();
-        let api = include_str!("../../mod/src/main/java/nebula/neoforge/McApi.java");
-        let actions = include_str!("../../mod/src/main/java/nebula/neoforge/McActions.java");
-        let host = include_str!("../../mod/src/main/java/nebula/neoforge/NebulaMod.java");
-
-        fn names(src: &str, marker: &str) -> Vec<String> {
-            let mut out = Vec::new();
-            let mut rest = src;
-            while let Some(pos) = rest.find(marker) {
-                let after = &rest[pos + marker.len()..];
-                let Some(end) = after.find('"') else { break };
-                out.push(after[..end].to_string());
-                rest = &after[end + 1..];
-            }
-            out
-        }
+        let api = include_str!("../../NebulaLoadMod/src/main/java/nebula/neoforge/McApi.java");
+        let actions = include_str!("../../NebulaLoadMod/src/main/java/nebula/neoforge/McActions.java");
+        let host = include_str!("../../NebulaLoadMod/src/main/java/nebula/neoforge/NebulaMod.java");
 
         fn cases(src: &str) -> Vec<String> {
             src.lines()
@@ -2318,8 +4265,12 @@ mod tests {
                 .collect()
         }
 
-        let queries = names(rust, "q!(\"");
-        let actions_spec = names(rust, "a!(\"");
+        // 规格的唯一来源是 Java 侧资源；单测读同一份 JSON，锁住「规格 ↔ 宿主分支」。
+        let specs = parse_specs(EMBEDDED_SPECS).unwrap();
+        let queries: Vec<String> = specs.iter().filter(|s| s.query).map(|s| s.name.clone()).collect();
+        let actions_spec: Vec<String> = specs.iter().filter(|s| !s.query).map(|s| s.name.clone()).collect();
+        // 规格表只增不减：这里锁下限，避免"整表被覆盖"这类灾难，也免得每加一个原语就改一次数字。
+        assert!(specs.len() >= 107, "world-specs.json 条目数异常：只有 {}", specs.len());
         assert!(!queries.is_empty() && !actions_spec.is_empty(), "没解析到规格表");
 
         let query_cases: std::collections::HashSet<String> = cases(api).into_iter().collect();

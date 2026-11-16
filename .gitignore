@@ -7,7 +7,7 @@
 bridge/target/
 
 # ── Java 编译 / 打包产物 ──
-mod/build/
+NebulaLoadMod/build/
 *.class
 
 # ── 二进制产物（jar 通过 GitHub Release 分发，不进 git）──
@@ -27,12 +27,20 @@ server/*
 # ── 1.21.11 版本隔离目录：installer 生成的运行期数据，只留一份重建说明 ──
 server-1.21.11/*
 !server-1.21.11/README.md
+# 例外：词库（server-1.21.11/nebula/）是项目源码的一部分 —— 示例、注释、声明全在这里。
+# 只排掉 jar 里解出来的 _docs（它由 NebulaLoadMod/docs 生成，重复且会漂移）。
+!server-1.21.11/nebula/
+server-1.21.11/nebula/_docs/
+# 词库里的运行期数据同样不入库：账号 / 会话 / 玩家状态 / server.properties 快照。
+server-1.21.11/nebula/**/data/
+server-1.21.11/nebula/**/*.bak
 
 # ── 隔离回归测试服（另一套 libraries/.jdk/world 与 node_modules）──
 # 按 server 目录名派生，例如 server-1.21.11 -> .testserver-1.21.11
 .testserver/
 .testserver-*/
 .testserver.stale-*/
+.buildstaging-*/
 
 # ── 依赖 / 缓存 / 本地记录 ──
 node_modules/
@@ -49,3 +57,6 @@ logs/
 *.swp
 Thumbs.db
 .DS_Store
+
+# 本机客户端编译依赖（路径因机器而异，不入库）
+NebulaLoadMod/client-jar.txt

@@ -1,0 +1,21 @@
+// 配置来自同目录 `配置.json`；缺失或格式错误时用下面的内置默认值。
+// 改完 /nebula load 泥土商店 生效；开 /nebula debug 时改 json 也会自动重载。
+
+[函数]默认配置
+文::{"货币":"minecraft:dirt","货币名":"泥土","标题":"泥土商店","音效开":"minecraft:block.chest.open","音效点":"minecraft:ui.button.click","音效买":"minecraft:entity.player.levelup","音效卖":"minecraft:entity.experience_orb.pickup","音效错":"minecraft:entity.villager.no"}
+%文%
+
+[函数]配置数据
+文:$读文件 %库目录%/配置.json$
+如果:$JSON判断 %文%$!=true
+    文:$默认配置$
+如果尾
+%文%
+
+// 初始化时检查商品目录，坏了在控制台留一行提示。
+[函数]检查文件
+文:$读文件 %库目录%/商品.json$
+如果:$JSON判断 %文%$!=true
+    返回 警告：商品.json 缺失或不是合法 JSON，商店目录为空
+如果尾
+返回

@@ -1,0 +1,96 @@
+
+[f]初始化
+$世界.注册指令 自检 0$
+// 读回依赖玩家在线：开服首次编译时 bot 还没进服，跳过；
+// `/nebula load 自检` 时 bot 已在线，执行读回（不再有 [f]重载 钩子）。
+回时:$世界.取玩家数量$
+如果:%回时%>0
+    $读回$
+如果尾
+
+[指令]自检
+SC名:%玩家名%
+SC维:minecraft:overworld
+$世界.设方块 %SC维% 0 100 0 minecraft:diamond_block$
+$世界.设方块状态 %SC维% 1 100 0 minecraft:oak_log axis=x$
+$世界.填充区域 %SC维% 3 100 0 4 100 1 minecraft:gold_block$
+$世界.给物品 %SC名% minecraft:diamond 3$
+// 省略尾部参数：数量默认 1、效果秒数默认 30 / 等级默认 1。
+$世界.给予物品 %SC名% minecraft:emerald$
+$世界.加效果 %SC名% minecraft:haste$
+$世界.设置模式 创造 %SC名%$
+$世界.加效果 %SC名% minecraft:speed 60 1$
+$世界.玩家加标签 %SC名% regress$
+$世界.设置侧边栏 %SC名% 回归计分板$
+$世界.设置tick冻结 是$
+$世界.执行命令 say REGRESS-ACTION-DONE$
+// 悬浮字：时长拉到 600 tick，留给 RCON 反查；文本走「变量 + 引号 + § 颜色码」，
+// 与伤害显示插件里的写法一致，同时验证多词文本不会被空格切碎。
+SC文:§6§l暴击 §e12.5
+// 坐标也走一次算术（伤害显示里是 [%y%+%身高%]），顺带验证括号运算 → 浮点实参 → 实体位置。
+SCy:[100+50]
+$世界.悬浮字 %SC维% 0 %SCy% 0 "%SC文%" 1.6 1.2 600$
+// 模拟「存档里翻出来的残留」：带 nebula_fx 标签、但宿主的活动列表里没有它。
+// 兜底扫描应当在一秒内把它清掉（清不掉就是永久飘字那个 bug）。
+// 注意：/summon 带 {Tags:[...]} 在这版没生效，补标记放到 [f]重载 里做（见下）。
+$世界.执行命令 summon minecraft:text_display 10 150 10$
+// 治疗事件：先打掉血再回满，下面 [事件]实体治疗 会在日志里留一条 REGRESS-HEAL。
+$世界.生成实体 %SC维% minecraft:cow 5 100 5 {CustomName:'"TestCow"',PersistenceRequired:1b}$
+$世界.实体伤害 TestCow 4$
+$世界.实体治疗 TestCow 4$
+// 已经满血再治一次：宿主应当直接不转发，日志里只留上面一条 REGRESS-HEAL。
+$世界.实体治疗 TestCow 4$
+// 上面的「实体伤害」走原版 damage ... minecraft:generic，DamageSource 没有来源实体，
+// 正是「非玩家造成的掉血」；宿主必须转发，不能只认玩家攻击。
+
+[事件]实体受伤
+$世界.执行命令 say REGRESS-DAMAGE|伤害=%伤害%|攻击者名=%攻击者名%|暴击=%暴击%$
+
+[事件]实体治疗
+$世界.执行命令 say REGRESS-HEAL|数值=%数值%|原因=%原因%|满血=%满血%|身高=%身高%$
+
+// 通用事件桥：按 Java 类名订阅，验证 EventBridge 真的动态注册并分发了 payload。
+[事件]EntityJoinLevelEvent
+$世界.执行命令 say REGRESS-EVENTBRIDGE|类=%eventClass%|名=%entity.name%$
+
+// 中文交互事件：只订阅就足以验证别名解析 + 动态注册（宿主会记「中文事件 … 已注册」）。
+// 事件真触发时顺带看中文 payload 键有没有展开。
+[事件]右键物品
+$世界.执行命令 say REGRESS-CN-INTERACT|玩家名=%玩家名%|物品=%物品%|手=%手%$
+
+// 玩家退出也走同一张别名表，验证非交互的 PlayerEvent 内部类一样能中文化。
+[事件]玩家退出
+$世界.执行命令 say REGRESS-CN-LOGOUT|玩家名=%玩家名%$
+
+[函数]读回
+// 给上一轮 summon 出来的 text_display 补 nebula_fx 标记（动作在 [指令] 结束时才落地，
+// 所以查询只能放到重载里做）。打完标记，兜底扫描就该在 1 秒内把它清掉。
+SC表:$世界.取实体列表 minecraft:overworld 200$
+遍历:i,个=%SC表%
+    如果:%个.类型%==minecraft:text_display
+        $世界.实体加标签 %个.id% nebula_fx$
+    如果尾
+结束
+SC名:SelfBot
+V1:$世界.取玩家模式 %SC名%$
+V2:$世界.取玩家状态 %SC名%$
+V3:$世界.取模拟暂停$
+V4:$世界.取物品数 %SC名% minecraft:diamond$
+V5:$世界.玩家有标签 %SC名% regress$
+V6:$世界.取方块 minecraft:overworld 0 100 0$
+V7:$世界.取方块数据 minecraft:overworld 1 100 0$
+V8:$世界.取玩家数量$
+E1:$世界.取物品数 %SC名% minecraft:emerald$
+$世界.执行命令 say REGRESS-V1|模式=%V1%|暂停=%V3%|钻石=%V4%|标签=%V5%|方块=%V6%|数量=%V8%|绿宝石=%E1%$
+$世界.执行命令 say REGRESS-V2|橡木数据=%V7%|维度=%V2.维度%|名称=%V2.名称%$
+// 1.21.11 原生 API 直调：种子 / 协议号 / 版本 / 时间；顺带反查消耗度字段写入。
+V9:$世界.取种子$
+V10:$世界.取协议版本$
+V11:$世界.取服务器版本$
+V12:$世界.取时间$
+$世界.执行命令 say REGRESS-NATIVE|种子=%V9%|协议=%V10%|版本=%V11%|时间=%V12%$
+// 1.21.11 把世界出生点挪进 LevelData.RespawnData，旧 getter 全删了。
+// 恒返回 {} 时登录插件会把空坐标当成 0 0 0，这里锁死「必须拿到真实出生点」。
+V13:$世界.取复活点坐标$
+$世界.执行命令 say REGRESS-SPAWN|维度=%V13.维度%|x=%V13.x%|y=%V13.y%|z=%V13.z%$
+$世界.设置消耗度 SelfBot 2.5$

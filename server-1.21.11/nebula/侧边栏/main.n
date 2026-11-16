@@ -1,0 +1,157 @@
+// 侧边栏：右侧计分板信息板 —— 在线人数 / 生物数量 / 金币榜。
+// 原版侧边栏全服共用一份（显示槽位是全局状态，不是每个玩家各一份），
+// 所以「金币余额」用排行榜呈现：每个在线玩家一行「名字: 泥土数」，一眼能看到自己。
+// 货币沿用泥土商店的口径（背包里的泥土），可在 配置.json 里改。
+// 改完用 /侧边栏 重载 或 /nebula load 侧边栏 生效。
+
+[f]初始化
+$世界.注册指令 侧边栏 0 sidebar sb$
+$建板$
+
+[f]加载
+侧边栏已加载（/侧边栏 查看）
+
+[事件]玩家进入
+$上榜 %玩家名%$
+
+// 每秒刷在线人数与金币榜；生物数量每 5 秒刷一次（tick 后两位是 00）。
+[事件]每秒
+$刷新 %服务器tick%$
+
+// 玩家退出后把他的行撤掉，否则侧边栏会留着旧金币。
+[事件]玩家退出
+$世界.执行命令 scoreboard players reset %玩家名% nebula_board$
+
+// /侧边栏 看状态；/侧边栏 重载 立刻刷新；/侧边栏 关闭|开启 收起展开。
+[指令]侧边栏|sidebar|sb
+参:$去除左右 %参数%$
+如果:%参%==重载
+    如果:%管理员%!=是
+        $世界.提示 %玩家名% §c该指令需要管理员权限。$
+        返回
+    如果尾
+    $刷新 %服务器tick%$
+    $世界.提示 %玩家名% §a侧边栏已刷新$
+    返回
+如果尾
+如果:%参%==关闭
+    如果:%管理员%!=是
+        $世界.提示 %玩家名% §c该指令需要管理员权限。$
+        返回
+    如果尾
+    $世界.执行命令 scoreboard objectives setdisplay sidebar$
+    $世界.提示 %玩家名% §7侧边栏已收起（/侧边栏 开启 恢复）$
+    返回
+如果尾
+如果:%参%==开启
+    $世界.执行命令 scoreboard objectives setdisplay sidebar nebula_board$
+    $世界.提示 %玩家名% §a侧边栏已展开$
+    返回
+如果尾
+如果:%参%==数字
+    配置:$配置数据$
+    货:$JSON键读 %配置% 货币$
+    进:$世界.取玩家数量$
+    生:$数生物$
+    己:$世界.取物品数 %玩家名% %货%$
+    $世界.提示 %玩家名% "§7在线 §f%进% §8| §a生物 §f%生% §8| §e我的金币 §f%己%"$
+    返回
+如果尾
+进:$世界.取玩家数量$
+$世界.提示 %玩家名% "§b侧边栏 §7· 在线 §f%进% §8| §7/侧边栏 数字 §8· §7/侧边栏 重载 §8· §7/侧边栏 关闭 §8· §7/侧边栏 开启"$
+
+// ── 建板 ──
+// 每次编译（开服 / reload）都整个重建 objective：删掉再建会把历史残留的玩家行一起清空，
+// 不依赖退出事件也能保证「不在线的人不会留在榜上」。
+// 三条信息行的分数是固定排序键，取接近 int 上限的值，永远压在玩家金币行之上，
+// 所以顺序不会随数值变化而跳动。信息行的数字用 numberformat blank 隐藏，
+// 整行文本交给 display name。
+[函数]建板
+配置:$配置数据$
+标:$JSON键读 %配置% 标题$
+$世界.执行命令 scoreboard objectives remove nebula_board$
+$世界.执行命令 scoreboard objectives add nebula_board dummy$
+$世界.执行命令 scoreboard objectives setdisplay sidebar nebula_board$
+模::{text:"{文}"}
+样:$替换 %模% "{文}" %标%$
+$世界.执行命令 scoreboard objectives modify nebula_board displayname %样%$
+$世界.执行命令 scoreboard players set online nebula_board 2147482000$
+$世界.执行命令 scoreboard players set mob nebula_board 2147481000$
+$世界.执行命令 scoreboard players set head nebula_board 2147480000$
+$世界.执行命令 scoreboard players display numberformat online nebula_board blank$
+$世界.执行命令 scoreboard players display numberformat mob nebula_board blank$
+$世界.执行命令 scoreboard players display numberformat head nebula_board blank$
+线::{text:"§8───────────"}
+$世界.执行命令 scoreboard players display name head nebula_board %线%$
+
+// ── 每秒刷新 ──
+[函数]刷新 时刻
+配置:$配置数据$
+开:$JSON键读 %配置% 开关$
+如果:%开%==否
+    返回
+如果尾
+进:$世界.取玩家数量$
+$世界.执行命令 scoreboard players set online nebula_board 2147482000$
+模::{text:"§e在线 §f{值}"}
+样:$替换 %模% "{值}" %进%$
+$世界.执行命令 scoreboard players display name online nebula_board %样%$
+$刷金币$
+尾:$取后字符 2 %时刻%$
+如果:%尾%==00
+    $刷生物$
+如果尾
+
+// ── 金币榜 ──
+// 分数就是金币数，所以原版按分数降序排出来的天然是 gold 榜。
+[函数]刷金币
+配置:$配置数据$
+货:$JSON键读 %配置% 货币$
+表:$世界.取玩家列表$
+遍历:i,人=%表%
+    金:$世界.取物品数 %人.名称% %货%$
+    $世界.执行命令 scoreboard players set %人.名称% nebula_board %金%$
+结束
+
+// ── 生物数量 ──
+// 取实体列表不带维度时一次扫全部维度；上限 512，实体特别多时会截断。
+// 「有最大血量」= LivingEntity，再排掉玩家，剩下的都算生物。
+[函数]刷生物
+生:$数生物$
+$世界.执行命令 scoreboard players set mob nebula_board 2147481000$
+模::{text:"§a生物 §f{值}"}
+样:$替换 %模% "{值}" %生%$
+$世界.执行命令 scoreboard players display name mob nebula_board %样%$
+
+[函数]数生物
+表:$世界.取实体列表$
+数:0
+一:1
+遍历:i,个=%表%
+    血:$JSON键读 %个% 最大血量$
+    如果:%血%!=
+        如果:%个.类型%!=minecraft:player
+            数:[%数%+%一%]
+        如果尾
+    如果尾
+结束
+%数%
+
+// ── 上榜 ──
+[函数]上榜 名
+配置:$配置数据$
+货:$JSON键读 %配置% 货币$
+金:$世界.取物品数 %名% %货%$
+$世界.执行命令 scoreboard players set %名% nebula_board %金%$
+
+// ── 配置 ──
+[函数]默认配置
+文::{"开关":"是","标题":"§b§l星 云 服 务 器","货币":"minecraft:dirt"}
+%文%
+
+[函数]配置数据
+文:$读文件 %库目录%/配置.json "{}"$
+如果:$JSON判断 %文%$!=true
+    文:$默认配置$
+如果尾
+%文%

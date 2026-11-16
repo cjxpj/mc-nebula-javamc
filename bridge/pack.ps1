@@ -31,9 +31,9 @@ $ErrorActionPreference = 'Stop'
 
 $bridgeDir = $PSScriptRoot
 $javamcDir = Split-Path -Parent $bridgeDir
-$buildPs1 = Join-Path $javamcDir 'mod\build.ps1'
+$buildPs1 = Join-Path $javamcDir 'NebulaLoadMod\build.ps1'
 $cargoToml = Join-Path $bridgeDir 'Cargo.toml'
-$regressPy = Join-Path $javamcDir 'mod\selftest\regress.py'
+$regressPy = Join-Path $javamcDir 'NebulaLoadMod\selftest\regress.py'
 
 # Honour an inherited CARGO_TARGET_DIR so this script and build.ps1 agree on paths.
 if (-not $RustTargetDir -and $env:CARGO_TARGET_DIR) { $RustTargetDir = $env:CARGO_TARGET_DIR }

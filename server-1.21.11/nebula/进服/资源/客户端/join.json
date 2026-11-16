@@ -1,0 +1,8 @@
+{
+  "更新提示": {
+    "开关": "是",
+    "端口": 25568,
+    "GitHub": "https://github.com/cjxpj/mc-nebula-javamc/releases/tag/v{版本}",
+    "文案": "§d[星云] §fmod 有新版本 §e{版本} §7(当前 §f{本地}§7)，§b§n点此打开 GitHub 发布页§r§7，替换 mods 里的 jar 后重启游戏"
+  }
+}

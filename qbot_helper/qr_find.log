@@ -1,0 +1,8 @@
+[console] info [useAuth] fetchDeveloperInfo no login ticket
+URL=https://q.qq.com/#/
+IMGS=[]
+CANVASES=0
+TEXT_HITS=[]
+BODY_LEN=0
+QR_RESPONSES=["200 https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/QrcodeService-d7T9rOpo.js","200 https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/user-DQRiEp3W.js","200 https://q.qq.com/h5/assets-retry/QrcodeService-d7T9rOpo.js"]
+saved qr_page.png

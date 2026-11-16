@@ -1,0 +1,155 @@
+[
+  {
+    "name": "设方块",
+    "cmd": "execute in minecraft:overworld if block 0 100 0 minecraft:diamond_block",
+    "expect": "test_passed"
+  },
+  {
+    "name": "设方块状态",
+    "cmd": "execute in minecraft:overworld if block 1 100 0 minecraft:oak_log[axis=x]",
+    "expect": "test_passed"
+  },
+  {
+    "name": "填充区域",
+    "cmd": "execute in minecraft:overworld if block 3 100 0 minecraft:gold_block",
+    "expect": "test_passed"
+  },
+  {
+    "name": "设置模式=创造",
+    "cmd": "data get entity SelfBot playerGameType",
+    "contains": "1"
+  },
+  {
+    "name": "加效果=speed",
+    "cmd": "data get entity SelfBot active_effects",
+    "contains": "minecraft:speed"
+  },
+  {
+    "name": "设置侧边栏",
+    "cmd": "scoreboard objectives list",
+    "contains": "回归计分板"
+  },
+  {
+    "name": "设置tick冻结",
+    "cmd": "tick query",
+    "contains": "frozen"
+  },
+  {
+    "name": "玩家在线",
+    "cmd": "list",
+    "contains": "SelfBot"
+  },
+  {
+    "name": "悬浮字",
+    "cmd": "execute if entity @e[type=minecraft:text_display]",
+    "expect": "test_passed"
+  },
+  {
+    "name": "悬浮字文本",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1]",
+    "contains": "暴击"
+  },
+  {
+    "name": "悬浮字文本是组件NBT而非JSON原文",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1] text",
+    "contains": "暴击",
+    "not_contains": "{\"text\""
+  },
+  {
+    "name": "悬浮字颜色",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1]",
+    "contains": "gold"
+  },
+  {
+    "name": "悬浮字满亮度",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1]",
+    "contains": "brightness"
+  },
+  {
+    "name": "悬浮字位移插值",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1] teleport_duration",
+    "contains": "entity data: 2"
+  },
+  {
+    "name": "悬浮字坐标",
+    "cmd": "data get entity @e[type=minecraft:text_display,limit=1] Pos",
+    "contains": "d, 15"
+  },
+  {
+    "name": "实体治疗事件",
+    "log": "REGRESS-HEAL",
+    "contains": "数值=4.0"
+  },
+  {
+    "name": "满血回复不转发",
+    "log": "REGRESS-HEAL",
+    "contains": "数值=4.0",
+    "count": 1
+  },
+  {
+    "name": "非玩家伤害也转发实体受伤",
+    "log": "REGRESS-DAMAGE",
+    "contains": "攻击者名=generic"
+  },
+  {
+    "name": "残留飘字被清掉",
+    "cmd": "execute if entity @e[type=minecraft:text_display,x=10,y=150,z=10,distance=..3]",
+    "contains": "Test failed"
+  },
+  {
+    "name": "通用事件桥清单",
+    "log": "通用事件桥清单",
+    "contains": "267 个事件类"
+  },
+  {
+    "name": "通用事件桥动态注册",
+    "log": "REGRESS-EVENTBRIDGE",
+    "contains": "EntityJoinLevelEvent"
+  },
+  {
+    "name": "原生API直调-协议号",
+    "log": "REGRESS-NATIVE",
+    "contains": "协议=774"
+  },
+  {
+    "name": "原生API直调-服务器版本",
+    "log": "REGRESS-NATIVE",
+    "contains": "1.21.11"
+  },
+  {
+    "name": "原生API直调-种子与时间",
+    "log": "REGRESS-NATIVE",
+    "contains": "REGRESS-NATIVE|种子="
+  },
+  {
+    "name": "设置消耗度写入",
+    "cmd": "data get entity SelfBot foodExhaustionLevel",
+    "contains": "2.5"
+  },
+  {
+    "name": "尾参默认值-数量",
+    "log": "REGRESS-V1",
+    "contains": "绿宝石=1"
+  },
+  {
+    "name": "尾参默认值-效果时长等级",
+    "cmd": "data get entity SelfBot active_effects",
+    "contains": "minecraft:haste"
+  },
+  {
+    "name": "取复活点坐标返回真实出生点",
+    "log": "REGRESS-SPAWN",
+    "contains": "维度=minecraft:overworld",
+    "not_contains": "|x=|y=|z="
+  },
+  {
+    "name": "中文事件别名-右键物品",
+    "log": "PlayerInteractEvent.RightClickItem",
+    "contains": "中文事件 右键物品"
+  },
+  {
+    "name": "中文事件别名-玩家退出",
+    "log": "PlayerEvent.PlayerLoggedOutEvent",
+    "contains": "中文事件 玩家退出"
+  }
+]

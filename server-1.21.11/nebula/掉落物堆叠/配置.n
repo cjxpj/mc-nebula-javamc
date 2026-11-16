@@ -1,0 +1,60 @@
+// 掉落物堆叠配置：同目录 配置.json；缺失或非法时用下面的内置默认值。
+// 改完执行 /nebula load 掉落物堆叠 生效；开 /nebula debug 时改 json 会自动重编译。
+
+[函数]默认配置
+文::{"启用":"是","间隔秒":2,"半径":2,"保护带组件物品":"是","显示数量":"是","无限堆叠":"是","维度":["minecraft:overworld","minecraft:the_nether","minecraft:the_end"],"物品":["minecraft:cobblestone","minecraft:stone","minecraft:cobbled_deepslate","minecraft:dirt","minecraft:sand","minecraft:gravel","minecraft:netherrack","minecraft:end_stone","minecraft:oak_log","minecraft:spruce_log","minecraft:birch_log","minecraft:wheat","minecraft:carrots","minecraft:potatoes","minecraft:sugar_cane","minecraft:melon_slice","minecraft:pumpkin","minecraft:bone","minecraft:string","minecraft:rotten_flesh","minecraft:gunpowder","minecraft:arrow","minecraft:feather","minecraft:slime_ball","minecraft:ender_pearl","minecraft:blaze_rod"]}
+%文%
+
+[函数]配置数据
+文:$读文件 %库目录%/配置.json$
+如果:$JSON判断 %文%$!=true
+    文:$默认配置$
+如果尾
+%文%
+
+// 从配置对象里取一个数组字段；缺失时返回空串，由 [f]初始化 回落到内置默认值。
+[函数]取数组 文 键
+表:$JSON键读 %文% %键%$
+%表%
+
+// 空值回落默认值；函数返回值在 [f]初始化 顶层赋值，避免块内赋值不落常驻作用域。
+[函数]默认值 值 缺省
+如果:%值%==
+    返回 %缺省%
+如果尾
+返回 %值%
+
+[函数]整数范围 值 缺省 最小 最大
+如果:%值%==
+    值:%缺省%
+如果尾
+如果:%值%<%最小%
+    值:%最小%
+如果尾
+如果:%值%>%最大%
+    值:%最大%
+如果尾
+%值%
+
+// 数组字段缺失时用默认配置里的同名数组。
+[函数]数组或默认 表 键
+如果:$JSON判断 %表%$==true
+    返回 %表%
+如果尾
+默认:$默认配置$
+表:$JSON键读 %默认% %键%$
+%表%
+
+// 插件停用或卸载时，宿主也不创建新的逻辑堆。
+[函数]启用开关 启用 值
+如果:%启用%==是
+    返回 %值%
+如果尾
+返回 否
+
+// 插件停用或卸载时，宿主也不挂数量显示。
+[函数]显示开关 启用 显示
+如果:%启用%==是
+    返回 %显示%
+如果尾
+返回 否

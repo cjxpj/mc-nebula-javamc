@@ -1,0 +1,2191 @@
+{
+  "version": 1,
+  "methods": [
+    {
+      "name": "取方块",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取方块数据",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "获取方块",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取方块标签",
+      "query": true,
+      "fallback": "[]",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设方块",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "方块",
+          "at": 5,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设方块状态",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "名称",
+          "at": 5,
+          "kind": "Str"
+        },
+        {
+          "key": "状态",
+          "at": 6,
+          "kind": "Text",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "设方块数据",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "数据",
+          "at": 5,
+          "kind": "Text"
+        }
+      ]
+    },
+    {
+      "name": "取生物群系",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设生物群系",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x1",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "z1",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "x2",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z2",
+          "at": 5,
+          "kind": "Int"
+        },
+        {
+          "key": "群系",
+          "at": 6,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "填充区域",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x1",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "y1",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "z1",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "x2",
+          "at": 5,
+          "kind": "Int"
+        },
+        {
+          "key": "y2",
+          "at": 6,
+          "kind": "Int"
+        },
+        {
+          "key": "z2",
+          "at": 7,
+          "kind": "Int"
+        },
+        {
+          "key": "方块",
+          "at": 8,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取玩家坐标",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取复活点坐标",
+      "query": true,
+      "fallback": "{}",
+      "fields": []
+    },
+    {
+      "name": "设复活点",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "x",
+          "at": 1,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 3,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取玩家状态",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取玩家列表",
+      "query": true,
+      "fallback": "[]",
+      "fields": []
+    },
+    {
+      "name": "取玩家数量",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "传送玩家",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "维度",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设置模式",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "模式",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "玩家",
+          "at": 2,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取玩家模式",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取玩家血量",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "治疗玩家",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "伤害玩家",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "击杀玩家",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "踢出玩家",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "原因",
+          "at": 2,
+          "kind": "Text",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "设置侧边栏",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "文本",
+          "at": 2,
+          "kind": "Text"
+        }
+      ]
+    },
+    {
+      "name": "清除侧边栏",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "设置Tab列表",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "页眉",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "页脚",
+          "at": 3,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设置MOTD",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "文本",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取MOTD",
+      "query": true,
+      "fallback": "",
+      "fields": []
+    },
+    {
+      "name": "设置图标",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "路径",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设置等级",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "0"
+        }
+      ]
+    },
+    {
+      "name": "加等级",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "加经验",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "设置经验进度",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "0"
+        }
+      ]
+    },
+    {
+      "name": "设置饥饿",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "20"
+        }
+      ]
+    },
+    {
+      "name": "设置饱和度",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "5"
+        }
+      ]
+    },
+    {
+      "name": "设置消耗度",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "0"
+        }
+      ]
+    },
+    {
+      "name": "取玩家权限",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "设置权限",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "等级",
+          "at": 2,
+          "kind": "Int",
+          "default": "0"
+        }
+      ]
+    },
+    {
+      "name": "给予物品",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "物品",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "数量",
+          "at": 3,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "丢弃物品",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "物品",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "数量",
+          "at": 3,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "取手持物品",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取背包物品",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "槽位",
+          "at": 2,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设背包物品",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "槽位",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "物品",
+          "at": 3,
+          "kind": "Str"
+        },
+        {
+          "key": "数量",
+          "at": 4,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "清空背包",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "取副手物品",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "设置副手",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "物品",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "数量",
+          "at": 3,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "取装备",
+      "query": true,
+      "fallback": "[]",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "加效果",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "效果",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "秒",
+          "at": 3,
+          "kind": "Int",
+          "default": "30"
+        },
+        {
+          "key": "等级",
+          "at": 4,
+          "kind": "Int",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "移除效果",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "效果",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设置能力",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "能力",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "值",
+          "at": 3,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "设置飞行",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "设置无敌",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "设置隐身",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "设置名牌",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "文本",
+          "at": 2,
+          "kind": "Text"
+        }
+      ]
+    },
+    {
+      "name": "设置名牌可见",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "玩家加标签",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "玩家移除标签",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "玩家有标签",
+      "query": true,
+      "fallback": "否",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设置玩家出生点",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "维度",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设置区块半径",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "8"
+        }
+      ]
+    },
+    {
+      "name": "重发区块",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Int",
+          "default": "0"
+        }
+      ]
+    },
+    {
+      "name": "打开背包",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "播放动作",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "动作",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "骑乘",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "实体",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取消骑乘",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        }
+      ]
+    },
+    {
+      "name": "攻击",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "实体",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "交互",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "实体",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取时间",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "设时间",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "时刻",
+          "at": 1,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设天气",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "天气",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "更新天气",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "数值",
+          "at": 1,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取难度",
+      "query": true,
+      "fallback": "",
+      "fields": []
+    },
+    {
+      "name": "设难度",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "难度",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取种子",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "取游戏规则",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "名称",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设游戏规则",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "名称",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "保存世界",
+      "query": false,
+      "fallback": "",
+      "fields": []
+    },
+    {
+      "name": "取睡眠状态",
+      "query": true,
+      "fallback": "否",
+      "fields": []
+    },
+    {
+      "name": "区块已加载",
+      "query": true,
+      "fallback": "否",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 3,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取TPS",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "取MSPT",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "取服务器tick",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "取协议版本",
+      "query": true,
+      "fallback": "0",
+      "fields": []
+    },
+    {
+      "name": "取服务器版本",
+      "query": true,
+      "fallback": "",
+      "fields": []
+    },
+    {
+      "name": "取环境变量",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "名称",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "设环境变量",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "名称",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Text"
+        }
+      ]
+    },
+    {
+      "name": "取本地时间",
+      "query": true,
+      "fallback": "",
+      "fields": []
+    },
+    {
+      "name": "设置tick冻结",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "值",
+          "at": 1,
+          "kind": "Bool"
+        }
+      ]
+    },
+    {
+      "name": "步进tick",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "数值",
+          "at": 1,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "设置tick加速",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "数值",
+          "at": 1,
+          "kind": "Float"
+        }
+      ]
+    },
+    {
+      "name": "取模拟暂停",
+      "query": true,
+      "fallback": "否",
+      "fields": []
+    },
+    {
+      "name": "生成生物",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "类型",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "刷怪蛋生成",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "类型",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "标记",
+          "at": 3,
+          "kind": "Str",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "生成实体",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "类型",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        },
+        {
+          "key": "数据",
+          "at": 6,
+          "kind": "Text",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "生成粒子",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "效果",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "取实体列表",
+      "query": true,
+      "fallback": "[]",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "上限",
+          "at": 2,
+          "kind": "Int",
+          "default": "512"
+        },
+        {
+          "key": "类型",
+          "at": 3,
+          "kind": "Str",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "取实体坐标",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取实体数据",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体传送",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "维度",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 3,
+          "kind": "Int"
+        },
+        {
+          "key": "y",
+          "at": 4,
+          "kind": "Int"
+        },
+        {
+          "key": "z",
+          "at": 5,
+          "kind": "Int"
+        }
+      ]
+    },
+    {
+      "name": "实体伤害",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "实体治疗",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "数值",
+          "at": 2,
+          "kind": "Float",
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "name": "实体击杀",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体移除",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体加标签",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体移除标签",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体有标签",
+      "query": true,
+      "fallback": "否",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "标签",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "取实体属性",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "属性",
+          "at": 2,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "实体隐身",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "值",
+          "at": 2,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "弹窗输入",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Player"
+        },
+        {
+          "key": "标题",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "提示",
+          "at": 3,
+          "kind": "Str"
+        },
+        {
+          "key": "标签",
+          "at": 4,
+          "kind": "Str"
+        },
+        {
+          "key": "最长",
+          "at": 5,
+          "kind": "Int"
+        },
+        {
+          "key": "提交指令",
+          "at": 6,
+          "kind": "Str"
+        },
+        {
+          "key": "退出指令",
+          "at": 7,
+          "kind": "Str",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "悬浮字",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Float"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Float"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Float"
+        },
+        {
+          "key": "文本",
+          "at": 5,
+          "kind": "Str"
+        },
+        {
+          "key": "缩放",
+          "at": 6,
+          "kind": "Float",
+          "default": "1"
+        },
+        {
+          "key": "上升",
+          "at": 7,
+          "kind": "Float",
+          "default": "1"
+        },
+        {
+          "key": "时长",
+          "at": 8,
+          "kind": "Int",
+          "default": "20"
+        }
+      ]
+    },
+    {
+      "name": "巡逻",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "半径",
+          "at": 2,
+          "kind": "Float",
+          "default": "12"
+        },
+        {
+          "key": "追速",
+          "at": 3,
+          "kind": "Float",
+          "default": "1.2"
+        },
+        {
+          "key": "闲速",
+          "at": 4,
+          "kind": "Float",
+          "default": "0.6"
+        },
+        {
+          "key": "溜达",
+          "at": 5,
+          "kind": "Int",
+          "default": "4"
+        }
+      ]
+    },
+    {
+      "name": "寻路",
+      "query": true,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Float"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Float"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Float"
+        },
+        {
+          "key": "速度",
+          "at": 5,
+          "kind": "Float",
+          "default": "0.7"
+        }
+      ]
+    },
+    {
+      "name": "收取掉落物",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "半径",
+          "at": 2,
+          "kind": "Float",
+          "default": "1.6"
+        }
+      ]
+    },
+    {
+      "name": "容器空位",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    },
+    {
+      "name": "附近掉落物",
+      "query": true,
+      "fallback": "[]",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "半径",
+          "at": 2,
+          "kind": "Float",
+          "default": "12"
+        }
+      ]
+    },
+    {
+      "name": "可达",
+      "query": true,
+      "fallback": "0",
+      "fields": [
+        {
+          "key": "实体",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "x",
+          "at": 2,
+          "kind": "Float"
+        },
+        {
+          "key": "y",
+          "at": 3,
+          "kind": "Float"
+        },
+        {
+          "key": "z",
+          "at": 4,
+          "kind": "Float"
+        }
+      ]
+    },
+    {
+      "name": "聚拢掉落物",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "维度",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "白名单",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "半径",
+          "at": 3,
+          "kind": "Float",
+          "default": "2"
+        },
+        {
+          "key": "保护",
+          "at": 4,
+          "kind": "Bool",
+          "default": "是"
+        },
+        {
+          "key": "无限",
+          "at": 5,
+          "kind": "Bool",
+          "default": "是"
+        }
+      ]
+    },
+    {
+      "name": "皮肤",
+      "query": false,
+      "fallback": "",
+      "fields": [
+        {
+          "key": "操作",
+          "at": 1,
+          "kind": "Str"
+        },
+        {
+          "key": "玩家",
+          "at": 2,
+          "kind": "Str"
+        },
+        {
+          "key": "参数",
+          "at": 3,
+          "kind": "Text",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "name": "取皮肤",
+      "query": true,
+      "fallback": "{}",
+      "fields": [
+        {
+          "key": "玩家",
+          "at": 1,
+          "kind": "Str"
+        }
+      ]
+    }
+  ]
+}

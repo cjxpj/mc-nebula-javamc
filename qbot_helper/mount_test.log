@@ -1,0 +1,29 @@
+[c]info [useAuth] fetchDeveloperInfo no login ticket
+[c]info [PtLogin] createSession success, sessionId: a855f687-acee-46b5-9f44-2e83434ada4f
+[c]info [PtLogin] ptloginUrl: https://xui.ptlogin2.qq.com/cgi-bin/xlogin?daid=750&hide_title_bar=1&hide_border=1&target=self&appid=1600001541&style=22&hide_title=1&them
+[c]log 2026-11-14 18:15:24 452 [1794651324451][ INFO ] qloginInited
+[c]log 2026-11-14 18:15:24 452 [1794651324451][ INFO ] plogin.init() start
+[c]log 2026-11-14 18:15:24 454 [1794651324451][ INFO ] before buildQloginDom, list=[{"loginType":3}]
+[c]log 2026-11-14 18:15:24 455 [1794651324451][ INFO ] plogin.init() before getDeviceId
+[c]error Failed to load resource: net::ERR_ADDRESS_UNREACHABLE
+[c]error Access to script at 'https://localhost.ptlogin2.qq.com:4301/pt_get_uins?callback=ptui_getuins_CB&r=0.9884281050545746&pt_local_tk=355820894&pt_aid=1600001541&da
+[c]error Failed to load resource: net::ERR_FAILED
+[c]log 2026-11-14 18:15:24 560 [1794651324451][ INFO ] plogin.switchpage() flag=2 force=undefined
+[c]log 2026-11-14 18:15:24 566 [1794651324451][ INFO ] start qrlogin, uIndex==0
+[c]log 2026-11-14 18:15:24 566 [1794651324451][ INFO ] 隐藏QRCode不可用的遮罩
+[c]warning [PtLogin] reject message from untrusted origin: https://xui.ptlogin2.qq.com
+[c]warning [PtLogin] reject message from untrusted origin: https://xui.ptlogin2.qq.com
+[c]log 2026-11-14 18:15:24 744 [1794651324451][ INFO ] plogin.init() after getDeviceId
+[c]error Failed to load resource: net::ERR_ADDRESS_UNREACHABLE
+[c]error Failed to load resource: net::ERR_CONNECTION_REFUSED
+[c]log 2026-11-14 18:15:24 845 [1794651324451][ INFO ] plogin.init() domLoaded, pt.ptui={"s_url":"https://q.qq.com/h5/ptlogin-callback.html?session_id=a855f687-acee-46
+[c]error Failed to load resource: net::ERR_CONNECTION_REFUSED
+[c]error Failed to load resource: net::ERR_CONNECTION_REFUSED
+[c]error Failed to load resource: net::ERR_CONNECTION_REFUSED
+[c]log 2026-11-14 18:15:25 956 [1794651324451][ INFO ] 尝试完所有端口，都失败了 url=https://localhost.ptlogin2.qq.com:[port]/pt_get_uins?callback=ptui_getuins_CB&r=0.9884281050545
+[c]log qrlogin_key= hNvKUoMz2y18rF4-qi5f1PWDszDcIDtL
+MOUNTED=false URL=https://q.qq.com/#/ appChildren=-1
+IMGS=[{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASoAAAA0CAMAAAAKT4VCAAAAWlBMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjgf8mf/8nf/8AAAAlf/8mf/8lgP","w":298,"h":52},{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAMFBMVEUAAAAbGxsaGhocHBwcHBwbGxsaGhoaGhoaGhoaGhoaGhoaGhoaGhobGxsgICAaGh","w":48,"h":48},{"src":"https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/33-2-GiI9drV8.png","w":398,"h":518},{"src":"https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/49-CkzMoZyV.png","w":639,"h":692},{"src":"data:image/svg+xml,%3csvg%20width='28'%20height='28'%20viewBox='0%200%2028%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpat","w":28,"h":28},{"src":"data:image/svg+xml,%3csvg%20width='28'%20height='28'%20viewBox='0%200%2028%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpat","w":28,"h":28},{"src":"data:image/svg+xml,%3csvg%20width='28'%20height='28'%20viewBox='0%200%2028%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpat","w":28,"h":28},{"src":"data:image/svg+xml,%3csvg%20width='28'%20height='28'%20viewBox='0%200%2028%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpat","w":28,"h":28},{"src":"data:image/svg+xml,%3csvg%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpat","w":24,"h":24},{"src":"https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/icon-lobster-tag-CsGCYZro.svg","w":44,"h":36},{"src":"https://qqminiapp.cdn-go.cn/qq-open-platform/19bcbf74/assets/robot-banner1-BgQBaJSo.jpg","w":1000,"h":560}]
+TXT=["请使用超级管理员绑定的QQ扫码验证。","用手机打开QQ扫一扫","QQ登录\n邮箱登录","QQ登录","邮箱登录","选择登录主体请选择您要登录的开发者主体 返回  确认登录","选择登录主体请选择您要登录的开发者主体","选择登录主体","请选择您要登录的开发者主体","返回  确认登录","确认登录","机器人\nQQ功能Skill库\n游戏社区服务\nQQ互联\nQQ小程序/小游戏","机器人","快速注册账号登录 您当前登录的账号为快速注册账号，请使用QQ登录。","快速注册账号登录","您当前登录的账号为快速注册账号，请使用QQ登录。","如需使用账号密码登录，请完善资料并设置密码 去设置","如需使用账号密码登录，请完善资料并设置密码"]
+MIRRORED=78
+qr element shot

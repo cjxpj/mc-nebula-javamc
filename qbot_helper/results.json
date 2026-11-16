@@ -1,0 +1,333 @@
+{
+  "reason": "login_failed_no_skey",
+  "finalUrl": "https://q.qq.com/#/",
+  "skeyPresent": false,
+  "cookieNames": [
+    "tgw_l7_route@q.qq.com",
+    "pt_login_sig@.ptlogin2.qq.com",
+    "pt_clientip@.ptlogin2.qq.com",
+    "pt_serverip@.ptlogin2.qq.com",
+    "pt_local_token@.ptlogin2.qq.com",
+    "uikey@.ptlogin2.qq.com",
+    "pt_guid_sig@.ptlogin2.qq.com",
+    "__aegis_uid@.xui.ptlogin2.qq.com",
+    "_qpsvr_localtk@.qq.com",
+    "qlogin_uid@.qq.com",
+    "qrsig@.ptlogin2.qq.com"
+  ],
+  "bodySample": "帮助文档 在QQ与你的 OpenClaw 小龙虾对话 2分钟完成注册并创建 QQ Bot 无缝对接OpenClaw 立即使用 腾讯频道 Skills 已上线 一键连接腾讯频道能力，让Al融入社交生态，快速触达亿级用户 立即使用 QQ登录 邮箱登录 系统公告 【更新通知】腾讯频道skill上线了！ 【功能介绍】QQ龙虾bot使用文档 查看全部公告 全面开放能力，多场景连接QQ用户 机器人 QQ功能Skill库 游戏社区服务 QQ互联 QQ小程序/小游戏 快速搭建AI私人QQ助理 龙虾专用入口 创建QQ机器人并绑定OpenClaw、Hermes等环境，即可通过QQ机器人向 AI 下达指令。 支持Markdown、图片、语音、文件等多媒体消息收发，手机/桌面端QQ均可使用。 定制开发请查看 开发者接口文档 立即使用 关于腾讯 客服中心 隐私政策 侵权投诉 Copyright © 2012-2026 Tencent. All Rights Reserved.",
+  "scanLoginApi": [
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/cgi-bin/xlogin?daid=750&hide_title_bar=1&hide_border=1&target=self&appid=1600001541&style=22&hide_title=1&theme=10&s_url=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://imgcache.qq.com/ptlogin/v4/style/40/images/logo.png"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://qq-web.cdn-go.cn/monorepo/3ea7b82c/ptlogin/v4/style/theme/theme_10.css"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://qq-web.cdn-go.cn/monorepo/3ea7b82c/ptlogin/js/c_login_2.js"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://localhost.ptlogin2.qq.com:4301/pt_get_uins?callback=ptui_getuins_CB&r=0.001844001201956491&pt_local_tk=1362457070&pt_aid=1600001541&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://qq-web-other.cdn-go.cn/biz-libs/latest/any.ptlogin2.qq.com/fingerprintjs/index.umd.js"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://ui.ptlogin2.qq.com/style/0/images/load.gif"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://report.qqweb.qq.com/report/007?app=ptlogin&url=c_login_2&type=0&httpcode=200&retcode=1&cost=105"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrshow?appid=1600001541&e=2&l=M&s=3&d=72&v=4&t=0.6221453534297187&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://localhost.ptlogin2.qq.com:4303/pt_get_uins?callback=ptui_getuins_CB&r=0.001844001201956491&pt_local_tk=1362457070&pt_aid=1600001541&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://ssl.ptlogin2.qq.com/pt_fetch_dev_uin?r=0.5690118460363225&pt_guid_token=1677574379"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://ui.ptlogin2.qq.com/cgi-bin/report?id=2732844"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://localhost.ptlogin2.qq.com:4305/pt_get_uins?callback=ptui_getuins_CB&r=0.001844001201956491&pt_local_tk=1362457070&pt_aid=1600001541&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://localhost.ptlogin2.qq.com:4307/pt_get_uins?callback=ptui_getuins_CB&r=0.001844001201956491&pt_local_tk=1362457070&pt_aid=1600001541&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://localhost.ptlogin2.qq.com:4309/pt_get_uins?callback=ptui_getuins_CB&r=0.001844001201956491&pt_local_tk=1362457070&pt_aid=1600001541&daid=750&pt_3rd_aid=0&u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://qq-web.cdn-go.cn/monorepo/3ea7b82c/ptlogin/v4/style/20/images/shouQ_v2/qr_tips@2x.png"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655081936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655084936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655087946&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655090936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655093946&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655096936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655099941&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655102932&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655105943&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655108941&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655111942&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655114934&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655117946&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655120941&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655123933&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655126941&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655129947&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655132937&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655135938&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655138946&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655141939&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655144935&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655147936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655150933&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655153940&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655156937&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655159944&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655162939&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655165945&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655168931&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655171937&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655174944&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655177936&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655180939&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655183932&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655186942&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655189933&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655192942&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655195942&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655198942&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://xui.ptlogin2.qq.com/ssl/ptqrlogin?u1=https%3A%2F%2Fq.qq.com%2Fh5%2Fptlogin-callback.html%3Fsession_id%3D259fe85d-85c2-4ffb-9f5f-22170d989c3d%26_wv%3D16777218&ptqrtoken=2011749208&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-1794655201941&js_ver=26100915&js_type=1&login_sig=jIzyrwfFrhKl4Zy6LqpWZV8a7DsLxB6hjtZ6JvYZkeajj2jfctBs13617DYe-NFf&pt_uistyle=40&aid=1600001541&daid=750&&o1vId=93fcace4e75faabf25bc0dfb9596f649&pt_js_version=3ea7b82c"
+    }
+  ],
+  "botApi": [
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://q.qq.com/bot/"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://q.qq.com/bot/static/js/3.cab16c5efada314bcb8b.js"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://q.qq.com/bot/static/js/main.3bc42a2c9dff9024caa3.js"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://q.qq.com/bot/static/css/extract.3.6f7e97162fcbc03bd6be.css"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "https://q.qq.com/bot/static/css/extract.main.9163db175439dfc8709b.css"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "启用": true,
+  "仅空手": true,
+  "任意方块": false,
+  "只坐顶面": false,
+  "空气可坐": false,
+  "偏移": 0.0,
+  "提示": true,
+  "音效": "minecraft:block.wool.place"
+}

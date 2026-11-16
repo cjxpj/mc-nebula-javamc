@@ -1,0 +1,32 @@
+{
+  "名称": "星云剑",
+  "基底": "minecraft:diamond_sword",
+  "颜色": "light_purple",
+  "稀有度": "epic",
+  "耐久": 500,
+  "外观": "star_sword",
+  "描述": [
+    {
+      "文本": "攻击力 11 · 右键：星光斩",
+      "颜色": "gray"
+    },
+    {
+      "文本": "范围伤害 9 点，冷却 3 秒",
+      "颜色": "dark_purple"
+    }
+  ],
+  "属性": [
+    {
+      "属性": "minecraft:attack_damage",
+      "数值": 10.0,
+      "运算": "add_value",
+      "槽位": "mainhand"
+    },
+    {
+      "属性": "minecraft:attack_speed",
+      "数值": -2.4,
+      "运算": "add_value",
+      "槽位": "mainhand"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 本目录对应 `bedrock/bridge/`：Rust 侧静态链接 `crates/nebula`，通过 JNI 暴露一个窄接口给 Java 宿主。目前宿主只有 NeoForge 一侧；**JNI 契约与词库加载规则本身与平台无关**，将来若接入其他宿主，差异只落在事件源与 `世界` 实现。
 
-设计文档索引：[`../mod/docs/README.md`](../mod/docs/README.md)；设计细节：[`../mod/docs/neoforge.md`](../mod/docs/neoforge.md)；`世界` 对象映射：[`../mod/docs/mc-api-map.md`](../mod/docs/mc-api-map.md)。
+设计文档索引：[`../NebulaLoadMod/docs/README.md`](../NebulaLoadMod/docs/README.md)；设计细节：[`../NebulaLoadMod/docs/neoforge.md`](../NebulaLoadMod/docs/neoforge.md)；`世界` 对象映射：[`../NebulaLoadMod/docs/mc-api-map.md`](../NebulaLoadMod/docs/mc-api-map.md)。
 
 > 注入对象统一为 `世界`（`$世界.方法 …$`）。
 > `publish_world()` 同时向引擎注册两个类名，已有词库可以逐步迁移。
@@ -18,7 +18,7 @@
 ## 2. JNI 契约
 
 ```java
-native long    create(String wordlibRoot);
+native long    create(String wordlibRoot, String worldSpecsJson);
 native void    destroy(long handle);
 native String  loadAll(long handle);
 native String  load(long handle, String target);
@@ -34,6 +34,7 @@ native void    closeGui(long handle, long guiId);
 ```
 
 - 符号名按宿主类包名生成：`Java_nebula_neoforge_NativeBridge_create` 等。
+- `worldSpecsJson` 是 jar 内 `nebula/world-specs.json` 的内容：106 条表驱动方法的唯一声明来源（Java 侧维护），Rust 只按它生成通用转发闭包，不硬编码方法名；资源损坏时回退编译期副本。
 - `handle` 是 Rust 侧 `Box` 化引擎指针；`destroy` 后不得再使用。
 - 所有返回都是 JSON 文本；`dispatch` / `dispatchCommand` / `clickGui` 返回 `{ok?, summary?, outputs, actions, cancel}`，异常在 Rust 侧捕获，不向 Java 抛 panic。
 - `dispatchCommand` 按别名匹配 `[指令]` 词条；没有对应词条时返回 `ok=false`。
@@ -70,9 +71,9 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 - 入口 `main.n` 优先；没有 `main.n` 时只允许目录内唯一一个 `.n`。
 - 目录顶层全部 `.n` 自动合并；单文件 `$引入` 不再支持。
 - `_` / `.` 开头的目录禁用。
-- 生命周期：`[f]初始化` / `[f]加载` / `[f]重载` / `[f]卸载` / `[f]自检`。
+- 生命周期：`[f]初始化` / `[f]加载` / `[f]自检`（`[f]卸载` / `[f]重载` 已移除，统一由加载器管理）。
 - 热重载：工作线程编译 → 主线程原子替换；失败保留旧版本；旧异步任务带 epoch，过期回调丢弃。
-- `[f]初始化`（与 `@头部`）在**每次编译**都执行：load / loadAll / reload / debug 自动重编译都会跑，适合配置、状态与注册指令。`[f]加载` 只在插件首次插入时跑（reload 不跑），`[f]重载` 只在 reload 跑，`[f]卸载` 只在 `/nebula unload` 跑（关服 `destroy` 不跑）。详见 [`../mod/docs/neoforge.md`](../mod/docs/neoforge.md) 第 4.2 节。
+- `[f]初始化`（与 `@头部`）在**每次编译**都执行：load / loadAll / reload / debug 自动重编译都会跑，适合配置、状态与注册指令。`[f]加载` 只在插件首次插入时跑（reload 不跑）。**没有 `[f]卸载`**：`/nebula unload` 由加载器按插件归属回收指令 / 界面 / 生物 / 订阅 / 资源包，关服 `destroy` 直接销毁引擎。详见 [`../NebulaLoadMod/docs/neoforge.md`](../NebulaLoadMod/docs/neoforge.md) 第 4.2 节。
 - `[f]初始化` 不注册路由 / 长连接，不读默认模板文件。
 
 ### 调试自动重载
@@ -99,7 +100,7 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 
 - 查询类失败返回空串 / `{}` / `[]`；动作类失败返回空串并记日志。
 - 取消通过 `$世界.取消事件$` 写本次事件槽位，宿主在分发结束后统一应用。
-- 逐方法映射见 [`../mod/docs/mc-api-map.md`](../mod/docs/mc-api-map.md)。
+- 逐方法映射见 [`../NebulaLoadMod/docs/mc-api-map.md`](../NebulaLoadMod/docs/mc-api-map.md)。
 
 ### 5.0 全量方法与表驱动注册
 
@@ -113,7 +114,7 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 | 动作 | 宿主 `McActions.java` | 原版命令或稳定 API 落地；`McSupport` 提供实体查找、tick 统计与通用工具 |
 
 - 现有的 20 个手写 hook（界面对象 / 指令注册 / 取消事件 / 取相邻方块 / 取物品数等）保持不变，规格表只补缺失项。
-- 参数位次、字段命名与「是/否」转换规则写在 `mod/docs/mc-api-map.md` 第 0 节；两者由单测
+- 参数位次、字段命名与「是/否」转换规则写在 `NebulaLoadMod/docs/mc-api-map.md` 第 0 节；两者由单测
   `every_mapped_mc_method_has_a_function` 双向锁定：`cargo test --offline --lib`。增删方法的
   四步流程（文档表格 / 规格表 / 宿主分支 / 测试）也写在该节末尾。
 - `取TPS` / `取MSPT` / `取服务器tick` 由宿主统计 `ServerTickEvent.Pre/Post` 的 40 tick 滑窗。
@@ -122,7 +123,7 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 ### 5.2 词库调用注意（1.21.11 真机实测）
 
 - `%时间%`（`Value::Time`）/ `%版本%`（引擎版本）等是引擎内置系统变量，词库给同名变量赋值会被遮蔽，变量名要加前缀。
-- 动作是**延迟执行**的：同一词条里 `$世界.设方块 …$` 之后立刻 `$世界.取方块 …$` 读到的仍是旧值，要到下一次事件 / reload 才能读到效果。
+- 动作是**延迟执行**的：同一词条里 `$世界.设方块 …$` 之后立刻 `$世界.取方块 …$` 读到的仍是旧值，要到下一次事件 / 重编译 才能读到效果。
 - 方块类查询对未加载区块返回空串 / `{}` / `[]`；先 `$世界.区块已加载$`，或用 `/forceload add` 强加载。
 - `$世界.执行命令 say …$` 受 256 字符 chat 上限；`取实体列表 维度 上限` 可限制条数，`取方块标签` / `获取方块` 的长结果要分批输出。
 - 宿主命令改走 Brigadier `parse + execute`，真正的 `CommandSyntaxException` 会打 WARN；原版把「状态没变 / 粒子无人可见 / objective 不存在」也做成异常，宿主统一过滤，只剩真失败（目标不存在、区块未加载、UUID 被拒绝）。`设置侧边栏` 改用 Scoreboard API 判断目标是否已存在，避免发注定失败的命令。验证动作建议用查询读回或原版 `execute if …` 反查。
@@ -131,7 +132,7 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 
 ### 5.1 指令与界面
 
-- **插件指令**：词库在 `[f]初始化` 里调 `$世界.注册指令 商店 0 shop$`（规范名 + 可选权限 + 别名），桥接层把动作带回宿主注册 Brigadier 节点；`[f]卸载` 里 `$世界.注销指令$` 移除。执行时按规范名匹配 `[指令]商店|shop` 词条（`|` / `,` 分隔别名），只跑命中的那一条；没有 `[指令]` 词条时返回 `ok=false`。payload：`玩家 / 玩家名 / 指令（规范名） / 参数 / 管理员`。
+- **插件指令**：词库在 `[f]初始化` 里调 `$世界.注册指令 商店 0 shop$`（规范名 + 可选权限 + 别名），桥接层把动作带回宿主注册 Brigadier 节点；**不需要写 `[f]卸载` 注销** —— 宿主每次编译按批次 + 归属对账，本批没声明的入口自动摘掉。执行时按规范名匹配 `[指令]商店|shop` 词条（`|` / `,` 分隔别名），只跑命中的那一条；没有 `[指令]` 词条时返回 `ok=false`。payload：`玩家 / 玩家名 / 指令（规范名） / 参数 / 管理员`。
 - **界面对象 + 点击闭包**：词库先 `$面:$世界.创建界面 玩家 行数 标题$` 拿到对象 id，`$世界.界面物品 面 槽位 …$` / `$世界.界面数据 面 …$` 只作用于该对象，最后 `$世界.打开界面 面 回调$` 把 `回调:[函数] … 结束` 定义的闭包（按值捕获局部变量）交给宿主。宿主点击时调 `clickGui`，Rust 直接执行该闭包，payload 作为 `%参数1%`；关窗 / 退出 / 卸载 / 销毁时 `closeGui` 释放。同一玩家只保留最后一个打开的界面对象。
 - **界面**：统一用 `创建界面` 返回的对象 + `打开界面 面 回调` 闭包。
 - **动作归属**：事件执行期间 `世界` 动作会自动带上 `"插件"` 字段（`CURRENT_PLUGIN`）；界面对象本身也记录归属插件，只有创建者能操作它。
@@ -153,9 +154,9 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 | 事件 payload | 直接读 `ServerLevel` / `ServerPlayer` |
 | `世界` 实现 | `net.minecraft.*`（Mojang 映射） |
 | 线程调度 | `ServerTaskQueue` + tick |
-| 映射文档 | [`../mod/docs/mc-api-map.md`](../mod/docs/mc-api-map.md) |
+| 映射文档 | [`../NebulaLoadMod/docs/mc-api-map.md`](../NebulaLoadMod/docs/mc-api-map.md) |
 
-> JNI 契约与平台无关；曾评估的 Paper / Spigot 备选分支已移除，取舍见 [`../mod/docs/platform-choice.md`](../mod/docs/platform-choice.md)。
+> JNI 契约与平台无关；曾评估的 Paper / Spigot 备选分支已移除，取舍见 [`../NebulaLoadMod/docs/platform-choice.md`](../NebulaLoadMod/docs/platform-choice.md)。
 
 ## 8. 实现进度
 
@@ -164,12 +165,12 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 - [x] 事件分发与变量注入（payload 解析）、插件指令定向分发、界面点击闭包。
 - [x] `世界` 注入类与宿主 `McApi` / `McActions` 回调协议（映射表全量落地）。
 - [x] 取消标志回写、广播返回值透传。
-- [x] Windows 构建与原生库打包（`mod/build.ps1`）。
+- [x] Windows 构建与原生库打包（`NebulaLoadMod/build.ps1`）。
 - [ ] Linux `libnebula_jni.so` 打包与跨平台冒烟。
 
 ## 9. 一键回归自检
 
-`mod/selftest/` 把前面几轮手工验证固化成脚本（Python 标准库 + Node/mineflayer）：
+`NebulaLoadMod/selftest/` 把前面几轮手工验证固化成脚本（Python 标准库 + Node/mineflayer）：
 
 | 文件 | 作用 |
 | --- | --- |
@@ -177,9 +178,9 @@ Java 侧把事件字段整理成 JSON，Rust 侧解析后注入词库变量：
 | `rcon.py` | 极简 RCON 客户端 |
 | `bot.js` | mineflayer 假玩家（`node bot.js <名字> [silent]`） |
 | `checks.json` | 反查断言清单（`execute if …` / `data get entity …`） |
-| `wordlib/` | 回归自检词库（查询、动作、`[f]重载` 读回） |
+| `wordlib/` | 回归自检词库（查询、动作、`[f]初始化` 读回） |
 
-运行：`python mod/selftest/regress.py`。首次会自动 `npm install mineflayer@4.39.0`。
+运行：`python NebulaLoadMod/selftest/regress.py`。首次会自动 `npm install mineflayer@4.39.0`。
 当前断言 17 项，实测 17/17 PASS、宿主告警 0 条。
 
 安全边界：测试服在 `.testserver`，用目录联接共享 `libraries` / `.jdk`，独立
@@ -199,7 +200,7 @@ powershell -ExecutionPolicy Bypass -File bridge/pack.ps1 -Regression  # 打包 +
 顺序固定，**不能颠倒、也不能用 `-SkipRust`**：
 
 1. `[1/2]` `cargo build --release` 用当前引擎 crate 重新链接 `nebula_jni.dll`；失败立即停止，绝不拿旧 dll 打 jar。
-2. `[2/2]` 调 `mod/build.ps1` 走**全量分支**（内部再跑一次 cargo 是 no-op，目的是重写 `nebula_jni.manifest.json`，让原生库清单重新绑定到新 dll 哈希），完成 javac / 文档 / 打 jar / 部署到 `server-1.21.11/mods`。
+2. `[2/2]` 调 `NebulaLoadMod/build.ps1` 走**全量分支**（内部再跑一次 cargo 是 no-op，目的是重写 `nebula_jni.manifest.json`，让原生库清单重新绑定到新 dll 哈希），完成 javac / 文档 / 打 jar / 部署到 `server-1.21.11/mods`。
 3. 默认跑 `regress.py --verify-only`；加 `-Regression` 改跑完整隔离服回归。
 
 **为什么需要它**：`build.ps1 -SkipRust` 信任 `target/release/nebula_jni.manifest.json`，而指纹链只覆盖 `bridge/src` + `Cargo.toml`；引擎 `crates/nebula` 是仓库外的 path 依赖，**不在链内**。引擎一更新却用 `-SkipRust`，旧 dll 会被静默打进 jar，jar manifest / dll 内嵌指纹 / `--verify-only` 全部照旧通过（假 PASS）。
@@ -212,4 +213,4 @@ powershell -ExecutionPolicy Bypass -File bridge/pack.ps1 -Regression  # 打包 +
 
 参数：`-NoVerify` 跳过校验、`-Force` 绕过两个守卫（服务端进程 / stale dll）、`-RustTargetDir <path>` 自定义 cargo target 目录（同时透传给 `build.ps1`）。**脚本必须保持纯 ASCII**：PowerShell 5.1 按 GBK 读无 BOM 的 `.ps1`，中文字符串会吃掉引号导致 ParserError。
 
-只改 Java、引擎没动时仍可用 `mod/build.ps1 -SkipRust`；只要引擎仓库有更新，一律走 `pack.ps1`。
+只改 Java、引擎没动时仍可用 `NebulaLoadMod/build.ps1 -SkipRust`；只要引擎仓库有更新，一律走 `pack.ps1`。

@@ -1,0 +1,28 @@
+# 元信息骨架：mod id / 显示名 / license 等待拍板（见 NebulaLoadMod/docs/neoforge.md 第 9 节）。
+# loaderVersion 与 versionRange 必须随目标 NeoForge 版本调整。
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="nebula_bridge"
+version="0.9.1"
+displayName="Nebula Bridge"
+description='''
+星云词库引擎的 NeoForge 服务端桥接层。
+词库逻辑全部在 <gameDir>/nebula/*/main.n，本 mod 只做生命周期、事件转发与 mc 原语。
+'''
+
+[[dependencies.nebula_bridge]]
+modId="neoforge"
+type="required"
+versionRange="[21.11,21.12)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.nebula_bridge]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.11,1.21.12)"
+ordering="NONE"
+side="BOTH"
